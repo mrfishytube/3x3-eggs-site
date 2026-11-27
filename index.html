@@ -902,42 +902,55 @@
         renderUser(null);
       });
 
-      async function loadAdminUsers() {
-        const token = getToken();
-        if (!token) return;
-        try {
-          const res = await fetch(API_BASE + '/api/admin/users', {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          const data = await res.json();
-          if (!res.ok || !data.ok || !Array.isArray(data.users)) return;
+async function loadAdminUsers() {
+  const token = getToken();
 
-          const prev = adminTarget.value;
-          adminTarget.innerHTML = '';
+  if (!token) {
+    throw new Error('Geen geldige sessie. Log opnieuw in.');
+  }
 
-          const optSelf = document.createElement('option');
-          optSelf.value = 'SELF';
-          optSelf.textContent = '👑 Mezelf (' + (currentUser ? currentUser.email : '') + ')';
-          adminTarget.appendChild(optSelf);
+  const res = await fetch(API_BASE + '/api/admin/users', {
+    headers: {
+      'Authorization': 'Bearer ' + token
+    }
+  });
 
-          const optAll = document.createElement('option');
-          optAll.value = 'ALL';
-          optAll.textContent = '🌍 Iedereen (' + data.users.length + ' accounts)';
-          adminTarget.appendChild(optAll);
+  const data = await res.json();
 
-          data.users.forEach((u) => {
-            if (currentUser && u.id === currentUser.id) return;
-            const opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = (u.name || 'Speler') + ' [' + (u.role || 'player').toUpperCase() + '] (' + u.email + ')';
-            adminTarget.appendChild(opt);
-          });
+  if (!res.ok || !data.ok || !Array.isArray(data.users)) {
+    throw new Error(data.error || 'Spelerslijst ophalen mislukt.');
+  }
 
-          if (Array.from(adminTarget.options).some(o => o.value === prev)) {
-            adminTarget.value = prev;
-          }
-        } catch (e) {}
-      }
+  const prev = adminTarget.value;
+  adminTarget.innerHTML = '';
+
+  const optSelf = document.createElement('option');
+  optSelf.value = 'SELF';
+  optSelf.textContent = '👑 Mezelf (' + (currentUser ? currentUser.email : '') + ')';
+  adminTarget.appendChild(optSelf);
+
+  const optAll = document.createElement('option');
+  optAll.value = 'ALL';
+  optAll.textContent = '🌍 Iedereen (' + data.users.length + ' accounts)';
+  adminTarget.appendChild(optAll);
+
+  data.users.forEach((u) => {
+    if (currentUser && u.id === currentUser.id) return;
+
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent =
+      (u.name || 'Speler') +
+      ' [' + (u.role || 'player').toUpperCase() + '] (' +
+      u.email + ')';
+
+    adminTarget.appendChild(opt);
+  });
+
+  if (Array.from(adminTarget.options).some(o => o.value === prev)) {
+    adminTarget.value = prev;
+  }
+}
 
       document.getElementById('adminRefreshUsersBtn').addEventListener('click', async () => {
         setFeedback(adminFeedback, 'Lijst vernieuwen...', false);

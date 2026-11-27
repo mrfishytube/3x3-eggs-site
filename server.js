@@ -120,9 +120,12 @@ function getAuthUser(req) {
 
 function isAdmin(user) {
   if (!user) return false;
-  return (user.email || '').toLowerCase() === ADMIN_EMAIL || user.role === 'admin';
-}
 
+  const email = String(user.email || '').trim().toLowerCase();
+  const role = String(user.role || '').trim().toLowerCase();
+
+  return email === ADMIN_EMAIL || role === 'admin';
+}
 function createSession(uid) {
   const token = crypto.randomBytes(24).toString('hex');
   db.sessions[token] = uid;
@@ -361,7 +364,7 @@ const server = http.createServer(async (req, res) => {
         : (db.users[targetId] ? [db.users[targetId]] : []);
 
       if (targets.length === 0) {
-        sendJson(req, 404, { ok: false, error: 'Speler niet gevonden.' });
+sendJson(req, res, 404, { ok: false, error: 'Speler niet gevonden.' });
         return;
       }
 
@@ -407,7 +410,8 @@ const server = http.createServer(async (req, res) => {
       const body = await readJsonBody(req);
       const text = String(body.text || '').trim().slice(0, 200);
       if (!text) {
-        sendJson(req, 400, { ok: false, error: 'Bericht is leeg.' });
+sendJson(req, 400, { ok: false, error: 'Bericht is leeg.' });
+sendJson(req, 200, { ok: true });
         return;
       }
       broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
