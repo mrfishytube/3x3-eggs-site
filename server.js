@@ -9,8 +9,7 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com';
 const ADMIN_EMAIL = 'mr.fish.ytube@gmail.com'.toLowerCase();
 const AUTO_VERIFY_DOMAIN = '@ll.flevion.nl';
-const TOKEN_SECRET = process.env.SESSION_SECRET || '3x3_eggs_3d_custom_secret_2026_v9';
-const MAX_PLAYERS_PER_ROOM = 7;
+const TOKEN_SECRET = process.env.SESSION_SECRET || '3x3_eggs_ttsave_3d_secret_2026_v10';
 
 // ============================================================
 // BIG-NUMBER HELPERS
@@ -34,8 +33,7 @@ function formatBig(val) {
   return (neg ? '-' : '') + grouped;
 }
 
-// Veilige conversie naar JS Number voor de 3D game JSON (die geen BigInt in JSON kan parsen)
-function addToGameNumber(currentVal, deltaBig) {
+function addToSafeNumber(currentVal, deltaBig) {
   const curBig = toBig(Math.floor(Number(currentVal) || 0));
   const nextBig = curBig + deltaBig;
   const clamped = nextBig < 0n ? 0n : nextBig;
@@ -44,23 +42,18 @@ function addToGameNumber(currentVal, deltaBig) {
 }
 
 // ============================================================
-// DATABASE: ACCOUNTS + CUSTOM 3D GAME PROGRESS DATA
+// CUSTOM DATABASE (accounts + echte 3D ttSave voortgang)
 // ============================================================
-const DB_FILE = path.join(__dirname, 'custom-3d-data.json');
-let db = {
-  users: {},
-  gameProfiles: {}, // key = 3D game player id -> { id, channel, data, rawBody, updatedAt, adminLockUntil }
-  recentLogs: []
-};
+const DB_FILE = path.join(__dirname, 'custom-3d-saves.json');
+let db = { users: {}, logs: [] };
 
 if (fs.existsSync(DB_FILE)) {
   try {
-    const loaded = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    db.users = loaded.users || {};
-    db.gameProfiles = loaded.gameProfiles || {};
-    db.recentLogs = Array.isArray(loaded.recentLogs) ? loaded.recentLogs : [];
+    const parsed = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    db.users = parsed.users || {};
+    db.logs = Array.isArray(parsed.logs) ? parsed.logs : [];
   } catch (e) {
-    console.error('Kon custom-3d-data.json niet laden:', e.message);
+    db = { users: {}, logs: [] };
   }
 }
 
@@ -68,19 +61,19 @@ function saveDB() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
   } catch (e) {
-    console.error('Kon database niet opslaan:', e.message);
+    console.error('Kon custom-3d-saves.json niet opslaan:', e.message);
   }
 }
 
 function addLog(msg) {
-  const entry = `[${new Date().toLocaleTimeString('nl-NL')}] ${msg}`;
-  db.recentLogs.unshift(entry);
-  if (db.recentLogs.length > 30) db.recentLogs.length = 30;
-  console.log(entry);
+  const line = `[${new Date().toLocaleTimeString('nl-NL')}] ${msg}`;
+  db.logs.unshift(line);
+  if (db.logs.length > 35) db.logs.length = 35;
+  console.log(line);
 }
 
 function hashPassword(pw) {
-  return crypto.createHash('sha256').update('eggs_salt_v9_' + pw).digest('hex');
+  return crypto.createHash('sha256').update('eggs_salt_v10_' + pw).digest('hex');
 }
 
 function findUserByEmail(email) {
@@ -99,12 +92,14 @@ function publicUser(u) {
     diamonds: toBig(u.diamonds || '0').toString(),
     coins: toBig(u.coins || '0').toString(),
     speed: toBig(u.speed || '0').toString(),
-    items: Array.isArray(u.items) ? u.items : []
+    items: Array.isArray(u.items) ? u.items : [],
+    has3DSave: Boolean(u.ttSaveJson),
+    ttSaveUpdatedAt: u.ttSaveUpdatedAt || 0
   };
 }
 
 // ============================================================
-// STATELESS HMAC TOKENS (overleven Render herstarts -> geen 'Geen admin rechten' meer)
+// STATELESS HMAC TOKENS (overleven Render herstarts!)
 // ============================================================
 function createToken(user) {
   const payload = Buffer.from(JSON.stringify({
@@ -153,6 +148,9 @@ function getAuthUser(req) {
       coins: '0',
       speed: '0',
       items: [],
+      ttSaveJson: null,
+      ttSaveUpdatedAt: 0,
+      adminLockUntil: 0,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()
     };
@@ -168,167 +166,121 @@ function isAdmin(user) {
 }
 
 // ============================================================
-// SLIMME 3D PROGRESS-DATA PATCHER
-// Past direct de echte JSON-velden aan die de 3D-game via /progress gebruikt!
+// PATCHER VOOR ECHTE 3D GAME ttSave STORAGE DATA
 // ============================================================
-function patchNestedObject(obj, { cBig, dBig, sBig, role, item }) {
+function patchGameJsonRecursive(obj, { cBig, sBig, item }) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
-  let touched = false;
+  let changed = false;
 
-  const coinKeys = ['coins', 'coin', 'money', 'cash', 'gold', 'munten', 'balance'];
-  const gemKeys = ['gems', 'gem', 'diamonds', 'diamond', 'diamanten', 'rubies'];
-  const speedKeys = ['speed', 'snelheid', 'walkSpeed', 'moveSpeed', 'power', 'strength'];
-  const trailArrKeys = ['trails', 'unlockedTrails', 'ownedTrails'];
-  const activeTrailKeys = ['equippedTrail', 'activeTrail', 'currentTrail', 'trail'];
-  const treadArrKeys = ['treadmills', 'unlockedTreadmills', 'ownedTreadmills'];
-  const activeTreadKeys = ['equippedTreadmill', 'activeTreadmill', 'treadmill', 'treadmillLevel'];
-  const rankKeys = ['rank', 'role', 'title', 'badge', 'tag'];
+  const coinNames = ['coins', 'money', 'coin', 'balance', 'cash'];
+  const speedNames = ['speed', 'playerSpeed', 'walkSpeed', 'baseSpeed'];
+  const trailArrayNames = ['ownedtrails', 'unlockedtrails', 'trails', 'playertrails', 'ownedplayertrails'];
+  const activeTrailNames = ['equippedtrail', 'activetrail', 'selectedtrail', 'equippedplayertrail', 'playertrail'];
+  const treadmillArrayNames = ['ownedtreadmills', 'unlockedtreadmills', 'treadmills'];
+  const activeTreadmillNames = ['equippedtreadmill', 'activetreadmill', 'selectedtreadmill', 'treadmill'];
 
-  const keys = Object.keys(obj);
+  for (const key of Object.keys(obj)) {
+    const low = key.toLowerCase();
+    const val = obj[key];
 
-  // Munten
-  if (cBig !== 0n) {
-    let found = false;
-    for (const k of keys) {
-      if (coinKeys.includes(k.toLowerCase()) && (typeof obj[k] === 'number' || typeof obj[k] === 'string')) {
-        obj[k] = addToGameNumber(obj[k], cBig);
-        found = true;
-        touched = true;
+    if (cBig !== 0n && coinNames.includes(low) && (typeof val === 'number' || typeof val === 'string')) {
+      obj[key] = addToSafeNumber(val, cBig);
+      changed = true;
+    }
+
+    if (sBig !== 0n && speedNames.includes(low) && (typeof val === 'number' || typeof val === 'string')) {
+      obj[key] = addToSafeNumber(val, sBig);
+      changed = true;
+    }
+
+    if (item && item.toLowerCase().includes('trail')) {
+      const wantTrails = ['glitch', 'cosmic', 'secret', 'light', 'candy-cane', 'snowflake', 'ice', 'slime', 'water', 'green'];
+      if (trailArrayNames.includes(low) && Array.isArray(val)) {
+        for (const t of wantTrails) {
+          if (!val.includes(t)) val.push(t);
+        }
+        changed = true;
+      }
+      if (activeTrailNames.includes(low) && typeof val === 'string') {
+        obj[key] = item.toLowerCase().includes('admin') ? 'glitch' : 'cosmic';
+        changed = true;
       }
     }
-    if (!found && obj._isRootProgress) {
-      obj.coins = addToGameNumber(obj.coins || 0, cBig);
-      touched = true;
-    }
-  }
 
-  // Diamanten / Gems
-  if (dBig !== 0n) {
-    let found = false;
-    for (const k of keys) {
-      if (gemKeys.includes(k.toLowerCase()) && (typeof obj[k] === 'number' || typeof obj[k] === 'string')) {
-        obj[k] = addToGameNumber(obj[k], dBig);
-        found = true;
-        touched = true;
+    if (item && item.toLowerCase().includes('treadmill')) {
+      const wantTreads = ['basic', 'gold', 'diamond', 'sunken', 'quantum', 'galaxy', 'void', 'celestial', 'christmas', 'playtime', 'admin'];
+      if (treadmillArrayNames.includes(low) && Array.isArray(val)) {
+        for (const tm of wantTreads) {
+          if (!val.includes(tm)) val.push(tm);
+        }
+        changed = true;
+      }
+      if (activeTreadmillNames.includes(low)) {
+        if (typeof val === 'string') {
+          obj[key] = 'celestial';
+          changed = true;
+        }
       }
     }
-    if (!found && obj._isRootProgress) {
-      obj.gems = addToGameNumber(obj.gems || 0, dBig);
-      touched = true;
-    }
-  }
 
-  // Snelheid
-  if (sBig !== 0n) {
-    let found = false;
-    for (const k of keys) {
-      if (speedKeys.includes(k.toLowerCase()) && (typeof obj[k] === 'number' || typeof obj[k] === 'string')) {
-        obj[k] = addToGameNumber(obj[k], sBig);
-        found = true;
-        touched = true;
-      }
-    }
-    if (!found && obj._isRootProgress) {
-      obj.speed = addToGameNumber(obj.speed || 0, sBig);
-      touched = true;
-    }
-  }
-
-  // Trails
-  if (item && item.toLowerCase().includes('trail')) {
-    const trailId = item.toLowerCase().includes('admin') ? 'admin' : 'speed';
-    for (const k of keys) {
-      if (trailArrKeys.includes(k.toLowerCase()) && Array.isArray(obj[k])) {
-        if (!obj[k].includes(trailId)) obj[k].push(trailId);
-        if (!obj[k].includes(item)) obj[k].push(item);
-        touched = true;
-      }
-      if (activeTrailKeys.includes(k.toLowerCase())) {
-        obj[k] = trailId;
-        touched = true;
-      }
-    }
-    if (!touched && obj._isRootProgress) {
-      obj.unlockedTrails = Array.isArray(obj.unlockedTrails) ? obj.unlockedTrails : [];
-      if (!obj.unlockedTrails.includes(trailId)) obj.unlockedTrails.push(trailId);
-      obj.equippedTrail = trailId;
-      touched = true;
-    }
-  }
-
-  // Admin Treadmill
-  if (item && item.toLowerCase().includes('treadmill')) {
-    for (const k of keys) {
-      if (treadArrKeys.includes(k.toLowerCase()) && Array.isArray(obj[k])) {
-        if (!obj[k].includes('admin')) obj[k].push('admin');
-        if (!obj[k].includes('admin_treadmill')) obj[k].push('admin_treadmill');
-        touched = true;
-      }
-      if (activeTreadKeys.includes(k.toLowerCase())) {
-        obj[k] = typeof obj[k] === 'number' ? Math.max(obj[k], 99) : 'admin';
-        touched = true;
-      }
-    }
-    if (!touched && obj._isRootProgress) {
-      obj.unlockedTreadmills = Array.isArray(obj.unlockedTreadmills) ? obj.unlockedTreadmills : [];
-      if (!obj.unlockedTreadmills.includes('admin')) obj.unlockedTreadmills.push('admin');
-      obj.equippedTreadmill = 'admin';
-      touched = true;
-    }
-  }
-
-  // Rang / Admin
-  if (role) {
-    for (const k of keys) {
-      if (rankKeys.includes(k.toLowerCase())) {
-        obj[k] = role;
-        touched = true;
-      }
-      if (k.toLowerCase() === 'isadmin' || k.toLowerCase() === 'admin') {
-        obj[k] = role === 'admin';
-        touched = true;
-      }
-    }
-    if (obj._isRootProgress) {
-      obj.rank = role;
-      obj.isAdmin = role === 'admin';
-      touched = true;
-    }
-  }
-
-  // Loop ook door geneste objecten (bijv. data / progress / state / player / stats)
-  for (const k of keys) {
-    if (k.startsWith('_')) continue;
-    const val = obj[k];
     if (val && typeof val === 'object' && !Array.isArray(val)) {
-      if (patchNestedObject(val, { cBig, dBig, sBig, role, item })) {
-        touched = true;
-      }
+      if (patchGameJsonRecursive(val, { cBig, sBig, item })) changed = true;
     }
   }
-
-  return touched;
+  return changed;
 }
 
-function applyAdminPatchTo3DProfile(profile, patch) {
-  if (!profile.data || typeof profile.data !== 'object') {
-    profile.data = {};
+function patchUserTTSave(user, { cBig, sBig, item }) {
+  if (!user.ttSaveJson) return { patched: false, reason: 'Geen 3D save ontvangen van dit account (speel eerst 15 sec terwijl je bent ingelogd).' };
+  let bundle = null;
+  try {
+    bundle = JSON.parse(user.ttSaveJson);
+  } catch (e) {
+    return { patched: false, reason: '3D save is geen geldige JSON.' };
   }
-  const targetObj = (profile.data.progress && typeof profile.data.progress === 'object')
-    ? profile.data.progress
-    : ((profile.data.data && typeof profile.data.data === 'object') ? profile.data.data : profile.data);
+  if (!bundle || typeof bundle !== 'object' || !bundle.storage || typeof bundle.storage !== 'object') {
+    return { patched: false, reason: '3D save is ingepakt (packed) of heeft geen storage-object.' };
+  }
 
-  targetObj._isRootProgress = true;
-  patchNestedObject(targetObj, patch);
-  delete targetObj._isRootProgress;
+  let anyPatched = false;
+  // Als de admin alleen een trail/treadmill geeft, tel +1 munt bij zodat de 3D game ziet dat de account-save nieuwer/hoger is
+  const effectiveCoins = (cBig === 0n && sBig === 0n && item) ? 1n : cBig;
 
-  profile.updatedAt = Date.now();
-  // Voorkom dat de 3D game vlak voor reload onze admin-edit overschrijft met oude data
-  profile.adminLockUntil = Date.now() + 8000;
+  for (const [k, rawVal] of Object.entries(bundle.storage)) {
+    if (typeof rawVal !== 'string') continue;
+    const trimmed = rawVal.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (patchGameJsonRecursive(parsed, { cBig: effectiveCoins, sBig, item })) {
+          bundle.storage[k] = JSON.stringify(parsed);
+          anyPatched = true;
+        }
+      } catch (e) {}
+    } else if (/^\d+(\.\d+)?$/.test(trimmed)) {
+      const lowK = k.toLowerCase();
+      if (effectiveCoins !== 0n && (lowK.includes('coin') || lowK.includes('money'))) {
+        bundle.storage[k] = String(addToSafeNumber(trimmed, effectiveCoins));
+        anyPatched = true;
+      }
+      if (sBig !== 0n && lowK.includes('speed')) {
+        bundle.storage[k] = String(addToSafeNumber(trimmed, sBig));
+        anyPatched = true;
+      }
+    }
+  }
+
+  if (anyPatched) {
+    bundle.updatedAt = Date.now();
+    user.ttSaveJson = JSON.stringify(bundle);
+    user.ttSaveUpdatedAt = Date.now();
+    user.adminLockUntil = Date.now() + 10000;
+  }
+  return { patched: anyPatched, reason: anyPatched ? 'OK' : 'Geen bijpassend veld gevonden in storage (gebruik de JSON-editor hieronder om de exacte sleutel te zien).' };
 }
 
 // ============================================================
-// HTTP HELPERS + CORS (exact origin + credentials: true voor timestables.com)
+// HTTP HELPERS
 // ============================================================
 function httpsGetJson(url) {
   return new Promise((resolve, reject) => {
@@ -343,46 +295,35 @@ function httpsGetJson(url) {
   });
 }
 
-function readRawBody(req) {
+function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 3e6) req.destroy();
+      if (body.length > 5e6) req.destroy();
     });
-    req.on('end', () => resolve(body));
-    req.on('error', reject);
+    req.on('end', () => {
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (e) { reject(e); }
+    });
   });
 }
 
-async function readJsonBody(req) {
-  const raw = await readRawBody(req);
-  if (!raw || !raw.trim()) return {};
-  try { return JSON.parse(raw); } catch (e) { return { _raw: raw }; }
-}
-
-function setCorsHeaders(req, res) {
+function sendJson(req, res, status, obj) {
   const headers = (req && req.headers) ? req.headers : {};
   const origin = headers.origin;
-  if (origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Vary', 'Origin');
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', headers['access-control-request-headers'] || 'Content-Type, Authorization, X-Requested-With');
-}
-
-function sendJson(req, res, status, obj) {
-  setCorsHeaders(req, res);
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  });
   res.end(JSON.stringify(obj));
 }
 
 // ============================================================
-// LIVE SITE EVENTS + MULTIPLAYER ROOMS
+// LIVE SITE EVENTS (WebSocket)
 // ============================================================
 const siteEventClients = new Set();
 function broadcastSiteEvent(payload) {
@@ -392,45 +333,22 @@ function broadcastSiteEvent(payload) {
   }
 }
 
-const channels = new Map();
-function generateCode() {
-  const words = ['custom', 'ei', 'zon', 'ster', 'wolk', 'bloem', 'vlam'];
-  return words[Math.floor(Math.random() * words.length)] + Math.floor(1000 + Math.random() * 9000);
-}
-function getChannel(name) {
-  if (!channels.has(name)) channels.set(name, new Map());
-  return channels.get(name);
-}
-function findOrCreatePublicRoom(ch) {
-  const rooms = getChannel(ch);
-  for (const r of rooms.values()) {
-    if (!r.isPrivate && r.clients.size < MAX_PLAYERS_PER_ROOM) return r;
-  }
-  const code = generateCode();
-  const room = { code, isPrivate: false, clients: new Map() };
-  rooms.set(code, room);
-  return room;
-}
-function broadcastRoom(room, payload, excludeId = null) {
-  const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  for (const [id, client] of room.clients.entries()) {
-    if (id !== excludeId && client.ws.readyState === 1) client.ws.send(data);
-  }
-}
-
 // ============================================================
 // HTTP SERVER
 // ============================================================
 const server = http.createServer(async (req, res) => {
   try {
     if (!req || !res) return;
-    const rawUrl = req.url || '/';
-    const parsedUrl = new URL(rawUrl, 'http://localhost');
-    const urlPath = parsedUrl.pathname;
+    const headers = req.headers || {};
+    const urlPath = (req.url || '/').split('?')[0];
 
     if (req.method === 'OPTIONS') {
-      setCorsHeaders(req, res);
-      res.writeHead(204);
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': headers.origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      });
       res.end();
       return;
     }
@@ -442,113 +360,21 @@ const server = http.createServer(async (req, res) => {
         res.end(fs.readFileSync(filePath, 'utf8'));
         return;
       }
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('index.html ontbreekt in de hoofdmap op GitHub!');
+      return;
     }
 
     if (req.method === 'GET' && urlPath === '/api/health') {
       sendJson(req, res, 200, {
         ok: true,
-        usersCount: Object.keys(db.users).length,
-        gameProfilesCount: Object.keys(db.gameProfiles).length
+        version: '10.0.0',
+        usersCount: Object.keys(db.users).length
       });
       return;
     }
 
-    // ============================================================
-    // 3D GAME CUSTOM DATA ENDPOINTS (/server1/progress, /server1/matchmake/...)
-    // ============================================================
-    const gameMatch = urlPath.match(/^\/(server\d+|vip)\/(progress|matchmake\/.+)$/);
-    if (gameMatch) {
-      const chName = '/' + gameMatch[1];
-      const subPath = gameMatch[2];
-
-      // 1) 3D GAME SAVE & LOAD PROGRESS
-      if (subPath === 'progress') {
-        const queryId = parsedUrl.searchParams.get('id') || '';
-
-        if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-          const body = await readJsonBody(req);
-          const pid = String(queryId || body.id || body.playerId || body.userId || 'default').trim();
-          const existing = db.gameProfiles[pid];
-
-          if (existing && existing.adminLockUntil && Date.now() < existing.adminLockUntil) {
-            addLog(`3D POST /progress (${pid}) genegeerd tijdens Admin-override`);
-            sendJson(req, res, 200, existing.data || { ok: true, id: pid });
-            return;
-          }
-
-          db.gameProfiles[pid] = {
-            id: pid,
-            channel: chName,
-            data: body,
-            updatedAt: Date.now(),
-            adminLockUntil: 0
-          };
-          saveDB();
-          addLog(`3D Game progress opgeslagen voor ID: ${pid} (keys: ${Object.keys(body).join(', ')})`);
-          broadcastSiteEvent({ type: 'profiles_changed', id: pid });
-          sendJson(req, res, 200, { ok: true, id: pid, saved: true });
-          return;
-        }
-
-        // GET /server1/progress?id=...
-        const pid = String(queryId || 'default').trim();
-        let existing = db.gameProfiles[pid];
-        if (!existing) {
-          // Registreer deze 3D speler direct zodat de admin hem ziet in het Admin Panel!
-          existing = {
-            id: pid,
-            channel: chName,
-            data: {
-              id: pid,
-              coins: 0,
-              gems: 0,
-              speed: 0,
-              unlockedTrails: [],
-              unlockedTreadmills: []
-            },
-            updatedAt: Date.now(),
-            adminLockUntil: 0,
-            isNewPlaceholder: true
-          };
-          db.gameProfiles[pid] = existing;
-          saveDB();
-          addLog(`Nieuwe 3D Speler gedetecteerd via GET /progress: ${pid}`);
-          broadcastSiteEvent({ type: 'profiles_changed', id: pid });
-          // Stuur voor gloednieuwe onbewerkte speler leeg object zodat de 3D game schoon start en zijn echte format terug-POST
-          sendJson(req, res, 200, {});
-          return;
-        }
-
-        addLog(`3D Game laadt custom progress voor ID: ${pid}`);
-        // Stuur exact het opgeslagen (en door Admin bewerkte!) object terug
-        sendJson(req, res, 200, existing.isNewPlaceholder ? {} : existing.data);
-        return;
-      }
-
-      // 2) 3D GAME MATCHMAKING (/server1/matchmake/joinOrCreate/egg_room)
-      if (subPath.startsWith('matchmake/')) {
-        const room = findOrCreatePublicRoom(chName);
-        const sessionId = crypto.randomBytes(8).toString('hex');
-        const roomName = subPath.split('/').pop() || 'egg_room';
-        addLog(`3D Game matchmake (${subPath}) -> kamer ${room.code}`);
-        sendJson(req, res, 200, {
-          room: {
-            clients: room.clients.size,
-            createdAt: new Date().toISOString(),
-            maxClients: MAX_PLAYERS_PER_ROOM,
-            name: roomName,
-            processId: 'custom-node',
-            roomId: room.code
-          },
-          sessionId
-        });
-        return;
-      }
-    }
-
-    // ============================================================
-    // AUTH ENDPOINTS (Custom Email + @ll.flevion.nl skip + Google)
-    // ============================================================
+    // AUTH: REGISTER (geen verificatie voor @ll.flevion.nl & admin)
     if (req.method === 'POST' && urlPath === '/api/auth/register') {
       const body = await readJsonBody(req);
       const email = String(body.email || '').trim().toLowerCase();
@@ -587,14 +413,17 @@ const server = http.createServer(async (req, res) => {
         coins: '0',
         speed: '0',
         items: [],
+        ttSaveJson: null,
+        ttSaveUpdatedAt: 0,
+        adminLockUntil: 0,
         createdAt: now,
         lastLogin: now
       };
       saveDB();
 
       if (skipVerify) {
-        const token = createToken(db.users[uid]);
-        sendJson(req, res, 200, { ok: true, token, user: publicUser(db.users[uid]) });
+        addLog(`Nieuw account direct geverifieerd: ${email}`);
+        sendJson(req, res, 200, { ok: true, token: createToken(db.users[uid]), user: publicUser(db.users[uid]) });
       } else {
         sendJson(req, res, 200, {
           ok: true,
@@ -681,6 +510,9 @@ const server = http.createServer(async (req, res) => {
           coins: '0',
           speed: '0',
           items: [],
+          ttSaveJson: null,
+          ttSaveUpdatedAt: 0,
+          adminLockUntil: 0,
           createdAt: now,
           lastLogin: now
         };
@@ -708,7 +540,47 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ============================================================
-    // ADMIN ENDPOINTS (beheren ZOWEL website-accounts ALS live 3D game progress!)
+    // ECHTE 3D GAME ttSave BRIDGE ENDPOINTS
+    // ============================================================
+    if (req.method === 'GET' && urlPath === '/api/ttsave/load') {
+      const user = getAuthUser(req);
+      if (!user) {
+        sendJson(req, res, 401, { ok: false, error: 'Niet ingelogd.' });
+        return;
+      }
+      addLog(`3D Game laadt ttSave voor ${user.email} (${user.ttSaveJson ? user.ttSaveJson.length + ' bytes' : 'leeg'})`);
+      sendJson(req, res, 200, { ok: true, payloadJson: user.ttSaveJson || null });
+      return;
+    }
+
+    if (req.method === 'POST' && urlPath === '/api/ttsave/save') {
+      const user = getAuthUser(req);
+      if (!user) {
+        sendJson(req, res, 401, { ok: false, error: 'Niet ingelogd.' });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const payloadJson = typeof body.payloadJson === 'string' ? body.payloadJson : '';
+      if (!payloadJson) {
+        sendJson(req, res, 400, { ok: false, error: 'Geen payloadJson.' });
+        return;
+      }
+      if (user.adminLockUntil && Date.now() < user.adminLockUntil) {
+        addLog(`3D ttSave POST genegeerd tijdens Admin-override voor ${user.email}`);
+        sendJson(req, res, 200, { ok: true, skipped: true });
+        return;
+      }
+      user.ttSaveJson = payloadJson;
+      user.ttSaveUpdatedAt = Date.now();
+      saveDB();
+      addLog(`3D Game ttSave opgeslagen voor ${user.email} (${payloadJson.length} bytes)`);
+      broadcastSiteEvent({ type: 'ttsave_synced', userId: user.id });
+      sendJson(req, res, 200, { ok: true });
+      return;
+    }
+
+    // ============================================================
+    // ADMIN PANEL ENDPOINTS
     // ============================================================
     if (req.method === 'GET' && urlPath === '/api/admin/state') {
       const admin = getAuthUser(req);
@@ -718,19 +590,15 @@ const server = http.createServer(async (req, res) => {
       }
       sendJson(req, res, 200, {
         ok: true,
-        users: Object.values(db.users).map(publicUser),
-        gameProfiles: Object.values(db.gameProfiles).map((p) => ({
-          id: p.id,
-          channel: p.channel,
-          updatedAt: p.updatedAt,
-          data: p.data
+        users: Object.values(db.users).map((u) => ({
+          ...publicUser(u),
+          ttSaveJson: u.ttSaveJson || null
         })),
-        logs: db.recentLogs
+        logs: db.logs
       });
       return;
     }
 
-    // ADMIN: GEEF MUNTEN / GEMS / SNELHEID / TRAILS / TREADMILL / RANK
     if (req.method === 'POST' && urlPath === '/api/admin/give') {
       const admin = getAuthUser(req);
       if (!isAdmin(admin)) {
@@ -738,12 +606,22 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const body = await readJsonBody(req);
-      const { targetType = '3D', targetId = 'ALL', diamonds = '0', coins = '0', speed = '0', role = '', item = '' } = body;
+      const { targetId = 'SELF', diamonds = '0', coins = '0', speed = '0', role = '', item = '' } = body;
       const dBig = toBig(diamonds);
       const cBig = toBig(coins);
       const sBig = toBig(speed);
       const cleanItem = typeof item === 'string' ? item.trim().slice(0, 60) : '';
       const cleanRole = ['player', 'vip', 'mod', 'admin'].includes(role) ? role : '';
+
+      const realTargetId = targetId === 'SELF' ? admin.id : targetId;
+      const targets = realTargetId === 'ALL'
+        ? Object.values(db.users)
+        : (db.users[realTargetId] ? [db.users[realTargetId]] : []);
+
+      if (targets.length === 0) {
+        sendJson(req, res, 404, { ok: false, error: 'Speler niet gevonden.' });
+        return;
+      }
 
       const parts = [];
       if (cBig !== 0n) parts.push(`${cBig > 0n ? '+' : ''}${formatBig(cBig)} 🪙`);
@@ -752,28 +630,10 @@ const server = http.createServer(async (req, res) => {
       if (cleanItem) parts.push(cleanItem);
       if (cleanRole) parts.push(`Rang: ${cleanRole.toUpperCase()}`);
 
-      let updated3DCount = 0;
-      const patch = { cBig, dBig, sBig, role: cleanRole, item: cleanItem };
+      let patched3D = 0;
+      let lastNote = '';
 
-      // 1) Pas de echte 3D Game Progress data aan op de custom server!
-      if (targetType === '3D' || targetId === 'ALL') {
-        const profiles = targetId === 'ALL'
-          ? Object.values(db.gameProfiles)
-          : (db.gameProfiles[targetId] ? [db.gameProfiles[targetId]] : []);
-
-        for (const prof of profiles) {
-          prof.isNewPlaceholder = false;
-          applyAdminPatchTo3DProfile(prof, patch);
-          updated3DCount++;
-        }
-      }
-
-      // 2) Pas ook het website-account aan (voor admin badges & overzicht)
-      const accTargets = targetId === 'ALL'
-        ? Object.values(db.users)
-        : (db.users[targetId] ? [db.users[targetId]] : [admin]);
-
-      for (const u of accTargets) {
+      for (const u of targets) {
         u.diamonds = addClampedBig(u.diamonds, dBig);
         u.coins = addClampedBig(u.coins, cBig);
         u.speed = addClampedBig(u.speed, sBig);
@@ -784,52 +644,70 @@ const server = http.createServer(async (req, res) => {
         if (cleanRole) {
           u.role = (u.email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : cleanRole;
         }
+        if (cBig !== 0n || sBig !== 0n || cleanItem) {
+          const resPatch = patchUserTTSave(u, { cBig, sBig, item: cleanItem });
+          if (resPatch.patched) patched3D++;
+          lastNote = resPatch.reason;
+        }
       }
 
       saveDB();
       const summary = parts.join(', ') || 'Update';
-      addLog(`ADMIN GIVE (${updated3DCount} 3D profielen): ${summary}`);
+      addLog(`ADMIN GIVE -> ${realTargetId === 'ALL' ? 'IEDEREEN' : targets[0].email}: ${summary} (3D saves aangepast: ${patched3D})`);
 
       broadcastSiteEvent({
-        type: 'gift',
-        targetId: 'ALL',
-        reloadGame: updated3DCount > 0,
+        type: 'admin_update',
+        targetId: realTargetId,
+        reloadGame: patched3D > 0 || Boolean(cleanRole),
         summary
       });
 
       sendJson(req, res, 200, {
         ok: true,
-        updated3DCount,
+        patched3D,
+        note: lastNote,
         summary,
         user: publicUser(admin)
       });
       return;
     }
 
-    // ADMIN: DIRECTE RAW JSON EDITOR VOOR 3D PROGRESS DATA
-    if (req.method === 'POST' && urlPath === '/api/admin/save-3d-json') {
+    // ADMIN: DIRECTE 3D ttSave JSON EDITOR
+    if (req.method === 'POST' && urlPath === '/api/admin/save-ttsave') {
       const admin = getAuthUser(req);
       if (!isAdmin(admin)) {
         sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
         return;
       }
       const body = await readJsonBody(req);
-      const pid = String(body.profileId || '').trim();
-      if (!pid || !body.data || typeof body.data !== 'object') {
-        sendJson(req, res, 400, { ok: false, error: 'Ongeldige 3D JSON data.' });
+      const targetId = body.targetId === 'SELF' ? admin.id : String(body.targetId || '');
+      const target = db.users[targetId];
+      if (!target) {
+        sendJson(req, res, 404, { ok: false, error: 'Speler niet gevonden.' });
         return;
       }
-      db.gameProfiles[pid] = {
-        id: pid,
-        channel: (db.gameProfiles[pid] && db.gameProfiles[pid].channel) || '/server1',
-        data: body.data,
-        updatedAt: Date.now(),
-        adminLockUntil: Date.now() + 8000,
-        isNewPlaceholder: false
-      };
+      if (!body.payloadJson || typeof body.payloadJson !== 'string') {
+        sendJson(req, res, 400, { ok: false, error: 'Ongeldige JSON.' });
+        return;
+      }
+      try {
+        JSON.parse(body.payloadJson);
+      } catch (e) {
+        sendJson(req, res, 400, { ok: false, error: 'JSON syntax fout.' });
+        return;
+      }
+
+      target.ttSaveJson = body.payloadJson;
+      target.ttSaveUpdatedAt = Date.now();
+      target.adminLockUntil = Date.now() + 10000;
       saveDB();
-      addLog(`ADMIN RAW JSON opgeslagen voor 3D speler ${pid}`);
-      broadcastSiteEvent({ type: 'gift', targetId: 'ALL', reloadGame: true, summary: `3D Data aangepast (${pid})` });
+      addLog(`ADMIN JSON opgeslagen voor ${target.email}`);
+      broadcastSiteEvent({
+        type: 'admin_update',
+        targetId: target.id,
+        reloadGame: true,
+        summary: '3D Save-Data bijgewerkt door Admin!'
+      });
       sendJson(req, res, 200, { ok: true });
       return;
     }
@@ -853,43 +731,25 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(req, res, 404, { ok: false, error: 'Niet gevonden' });
   } catch (err) {
-    console.error('Server request error:', err);
+    console.error('Server error:', err);
     try {
       if (res && !res.headersSent) sendJson(req, res, 500, { ok: false, error: 'Interne serverfout' });
     } catch (_) {}
   }
 });
 
-// ============================================================
-// WEBSOCKET SERVER
-// ============================================================
 const wss = new WebSocketServer({ server });
 wss.on('connection', (ws, req) => {
-  const channelName = ((req && req.url) || '/server1').split('?')[0];
-  if (channelName === '/site-events') {
+  const ch = ((req && req.url) || '').split('?')[0];
+  if (ch === '/site-events') {
     siteEventClients.add(ws);
     ws.on('close', () => siteEventClients.delete(ws));
-    return;
   }
-
-  const baseChannel = '/' + (channelName.split('/')[1] || 'server1');
-  const playerId = Math.random().toString(36).slice(2, 10);
-  const currentRoom = findOrCreatePublicRoom(baseChannel);
-  currentRoom.clients.set(playerId, { ws });
-
-  ws.on('message', (raw) => {
-    broadcastRoom(currentRoom, raw, playerId);
-  });
-
-  ws.on('close', () => {
-    currentRoom.clients.delete(playerId);
-    if (currentRoom.clients.size === 0) getChannel(baseChannel).delete(currentRoom.code);
-  });
 });
 
 process.on('uncaughtException', (err) => console.error('Uncaught:', err));
 process.on('unhandledRejection', (reason) => console.error('Unhandled:', reason));
 
 server.listen(PORT, () => {
-  console.log(`🚀 3D Eggs Custom Data Server live op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
+  console.log(`🚀 3D Eggs ttSave & Admin Server v10 live op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
 });

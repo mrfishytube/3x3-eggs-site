@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <meta name="HandheldFriendly" content="true">
-  <title>3x3 Eggs 3D — Custom Data &amp; Admin</title>
+  <title>3x3 Eggs 3D — Admin &amp; Custom Data</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
@@ -17,10 +16,11 @@
       color: #f8fafc;
     }
 
-    #gameSrc {
+    #gameFrame {
       width: 100%;
       height: 100%;
       display: block;
+      border: 0;
       position: relative;
       z-index: 1;
     }
@@ -28,7 +28,7 @@
     #nav-toggle {
       position: fixed;
       left: 0;
-      top: 20px;
+      top: 18px;
       z-index: 1002;
       background: rgba(37, 99, 235, 0.94);
       color: #fff;
@@ -45,16 +45,13 @@
       box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
     }
     #nav-toggle:hover { background: #1d4ed8; }
-    #nav-toggle.active {
-      left: 360px;
-      background: #ef4444;
-    }
+    #nav-toggle.active { left: 370px; background: #ef4444; }
 
     #mnu {
       position: fixed;
       top: 0;
-      left: -360px;
-      width: 360px;
+      left: -370px;
+      width: 370px;
       height: 100%;
       background: #1e293b;
       z-index: 1001;
@@ -66,7 +63,7 @@
     #mnu.open { left: 0; }
     #mnu h2 { font-size: 1.2rem; color: #38bdf8; margin-bottom: 12px; }
     #mnu h3 {
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: #94a3b8;
@@ -123,6 +120,17 @@
     .role-mod { background: #10b981; color: #0f172a; }
     .role-player { background: #334155; color: #e2e8f0; }
 
+    .pill-info {
+      margin-top: 8px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      background: #1e293b;
+      color: #bae6fd;
+      line-height: 1.35;
+    }
+    .pill-info.gold { background: rgba(245, 158, 11, 0.16); border: 1px solid #f59e0b; color: #fde68a; }
+
     .field { margin-bottom: 9px; text-align: left; }
     .field label { display: block; font-size: 0.76rem; color: #cbd5e1; margin-bottom: 4px; }
     .field input, .field select, .field textarea {
@@ -137,8 +145,8 @@
     }
     .field textarea {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.75rem;
-      min-height: 120px;
+      font-size: 0.72rem;
+      min-height: 130px;
       resize: vertical;
     }
 
@@ -175,6 +183,7 @@
       overflow-y: auto;
       font-family: monospace;
       margin-top: 8px;
+      white-space: pre-wrap;
     }
 
     #darkScreen {
@@ -215,16 +224,13 @@
   <div id="darkScreen"></div>
   <div id="toastContainer"></div>
 
-  <!-- JOUW ECHTE 3D GAME -->
-  <object
-    id="gameSrc"
-    scrolling="no"
-    height="100%"
-    width="100%"
-    frameborder="0"
+  <!-- ECHTE 3D GAME VIA IFRAME MET ttSave BRIDGE & ADMIN TESTTOOLS -->
+  <iframe
+    id="gameFrame"
+    allow="fullscreen; autoplay"
     allowfullscreen="true"
-    data="">
-  </object>
+    src="about:blank">
+  </iframe>
 
   <nav id="mnu">
     <h2>🥚 3x3 Eggs 3D</h2>
@@ -276,18 +282,25 @@
             <div id="userEmail" class="user-email"></div>
           </div>
         </div>
+        <div id="ttSaveStatus" class="pill-info">🔄 Wachten op 3D game ttSave koppeling...</div>
         <button type="button" class="btn btn-danger" id="logoutBtn" style="margin-top:10px;">Uitloggen</button>
       </div>
     </div>
 
-    <!-- ADMIN PANEL VOOR DE 3D GAME CUSTOM DATA -->
+    <!-- ADMIN PANEL (ECHTE 3D GAME TOOLS + CUSTOM ttSave DATA EDITOR) -->
     <div id="adminSection" style="display:none;">
-      <h3 style="color:#fbbf24;">👑 3D Game Admin Panel</h3>
+      <h3 style="color:#fbbf24;">👑 3D Admin Panel</h3>
       <div class="admin-card">
+        <div class="pill-info gold" style="margin-top:0; margin-bottom:10px;">
+          <strong>✅ In-Game 3D Admin Knoppen staan AAN!</strong><br>
+          In de 3D game zelf heb je nu direct knoppen voor <em>Set Coins</em>, <em>Set Speed</em>, <em>Test Event</em>, <em>Test Storm</em>, <em>Spawn Animal</em>, <em>Unlock All Album</em>, <em>Skip Egg</em> en <em>Skip 24 Hours</em>!
+        </div>
+
         <div class="field">
-          <label for="profile3dSelect">3D Speler (op jouw Custom Server)</label>
-          <select id="profile3dSelect">
-            <option value="ALL">🌍 Alle 3D spelers op deze server</option>
+          <label for="adminTarget">Account kiezen (voor custom 3D save-data)</label>
+          <select id="adminTarget">
+            <option value="SELF">👑 Mezelf</option>
+            <option value="ALL">🌍 Alle accounts</option>
           </select>
         </div>
 
@@ -297,16 +310,12 @@
             <input type="text" inputmode="numeric" id="giveCoins" value="0" placeholder="100000000000">
           </div>
           <div class="field">
-            <label for="giveDiamonds">💎 Gems (3D)</label>
-            <input type="text" inputmode="numeric" id="giveDiamonds" value="0">
+            <label for="giveSpeed">⚡ Snelheid (3D)</label>
+            <input type="text" inputmode="numeric" id="giveSpeed" value="0" placeholder="100000000">
           </div>
         </div>
 
         <div class="row-2">
-          <div class="field">
-            <label for="giveSpeed">⚡ Snelheid (3D)</label>
-            <input type="text" inputmode="numeric" id="giveSpeed" value="0">
-          </div>
           <div class="field">
             <label for="giveRole">🏷️ Rang</label>
             <select id="giveRole">
@@ -314,49 +323,56 @@
               <option value="player">Speler</option>
               <option value="vip">VIP</option>
               <option value="mod">Mod</option>
-              <option value="admin">Admin</option>
+              <option value="admin">Admin (+3D Tools!)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="givePresetItem">🎁 3D Unlock</label>
+            <select id="givePresetItem">
+              <option value="">-- Kies --</option>
+              <option value="🏃 Admin Treadmill">🏃 Alle Loopbanden</option>
+              <option value="👑 Admin Trail">👑 Glitch/Admin Trail</option>
+              <option value="⚡ Speed Trail">⚡ Cosmic/Speed Trail</option>
             </select>
           </div>
         </div>
 
-        <div class="field">
-          <label for="givePresetItem">🎁 3D Item / Trail / Admin Treadmill</label>
-          <select id="givePresetItem">
-            <option value="">-- Kies item/trail (optioneel) --</option>
-            <option value="🏃 Admin Treadmill">🏃 Admin Treadmill</option>
-            <option value="👑 Admin Trail">👑 Admin Trail</option>
-            <option value="⚡ Speed Trail">⚡ Speed Trail</option>
-          </select>
-        </div>
-
-        <button type="button" class="btn btn-gold" id="adminGiveBtn">🎁 Pas 3D Data aan &amp; Herlaad 3D Game</button>
-        <button type="button" class="btn btn-secondary" id="adminRefreshBtn">🔄 Ververs 3D Spelers &amp; Data</button>
+        <button type="button" class="btn btn-gold" id="adminGiveBtn">🎁 Pas 3D Save-Data aan &amp; Herlaad</button>
+        <button type="button" class="btn btn-secondary" id="adminRefreshBtn">🔄 Ververs accounts &amp; 3D save-data</button>
 
         <hr style="border-top:1px solid #334155; margin:12px 0;">
 
         <div class="field">
-          <label for="raw3dJson">🛠️ Directe 3D Save-Data Editor (JSON)</label>
-          <textarea id="raw3dJson" placeholder="Kies hierboven een 3D speler om zijn exacte save-data te bewerken..."></textarea>
+          <label for="rawSaveEditor">🛠️ Directe 3D ttSave JSON Editor</label>
+          <textarea id="rawSaveEditor" placeholder="Speel 15 seconden ingelogd zodat de 3D game zijn echte save-data naar jouw server stuurt..."></textarea>
         </div>
-        <button type="button" class="btn btn-success" id="saveRawJsonBtn">💾 Opslaan &amp; 3D Game Herladen</button>
+        <button type="button" class="btn btn-success" id="saveRawBtn">💾 Sla 3D JSON op &amp; Herlaad</button>
+
+        <hr style="border-top:1px solid #334155; margin:12px 0;">
+
+        <div class="field">
+          <label for="adminAnnounceText">📢 Server-melding</label>
+          <input type="text" id="adminAnnounceText" placeholder="Bericht voor alle spelers...">
+        </div>
+        <button type="button" class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
 
         <div id="adminFeedback" class="feedback"></div>
-        <div id="adminLogs" class="log-box">Wachten op 3D game connectie...</div>
+        <div id="adminLogs" class="log-box">Logs laden...</div>
       </div>
     </div>
 
-    <h3>3D Game Server</h3>
+    <h3>3D Spelinstellingen</h3>
     <div class="card">
-      <div class="field">
-        <label for="serverMode">Verbinding</label>
-        <select id="serverMode">
-          <option value="custom">🛠️ Mijn Custom Data Server (/server1)</option>
-          <option value="official">🌐 Originele Timestables Server</option>
-        </select>
-      </div>
       <div class="field">
         <label for="tablesInput">Tafels (bijv. 10 of 1,2,5,10)</label>
         <input type="text" id="tablesInput" value="10">
+      </div>
+      <div class="field">
+        <label for="themeSelect">Thema</label>
+        <select id="themeSelect">
+          <option value="winter">❄️ Winter</option>
+          <option value="normal">🌲 Normaal</option>
+        </select>
       </div>
       <button type="button" class="btn btn-primary" id="applyBtn">3D Game Herladen</button>
       <button type="button" class="btn btn-secondary" id="fsBtn">⛶ Volledig scherm</button>
@@ -367,8 +383,7 @@
     (function () {
       const CONFIG = {
         GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
-        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
-        LOCKED_THEME: 'winter'
+        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com'
       };
       const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
       const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
@@ -385,26 +400,28 @@
       const navToggle = document.getElementById('nav-toggle');
       const mnu = document.getElementById('mnu');
       const darkScreen = document.getElementById('darkScreen');
-      const gameSrc = document.getElementById('gameSrc');
-      const serverMode = document.getElementById('serverMode');
+      const gameFrame = document.getElementById('gameFrame');
       const tablesInput = document.getElementById('tablesInput');
+      const themeSelect = document.getElementById('themeSelect');
       const toastContainer = document.getElementById('toastContainer');
       const authFeedback = document.getElementById('authFeedback');
       const adminFeedback = document.getElementById('adminFeedback');
-      const profile3dSelect = document.getElementById('profile3dSelect');
-      const raw3dJson = document.getElementById('raw3dJson');
+      const adminTarget = document.getElementById('adminTarget');
+      const rawSaveEditor = document.getElementById('rawSaveEditor');
       const adminLogs = document.getElementById('adminLogs');
+      const ttSaveStatus = document.getElementById('ttSaveStatus');
 
       let currentUser = null;
       let authMode = 'login';
       let pendingVerifyEmail = '';
-      let cachedProfiles = [];
+      let cachedAdminUsers = [];
       let eventWs = null;
+      let lastLoadedAdminState = null;
 
-      function getToken() { return localStorage.getItem('eggs_v9_token') || ''; }
+      function getToken() { return localStorage.getItem('eggs_v10_token') || ''; }
       function setToken(t) {
-        if (t) localStorage.setItem('eggs_v9_token', t);
-        else localStorage.removeItem('eggs_v9_token');
+        if (t) localStorage.setItem('eggs_v10_token', t);
+        else localStorage.removeItem('eggs_v10_token');
       }
       function isAdmin(u) {
         return Boolean(u && ((u.email || '').toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase() || u.role === 'admin'));
@@ -421,8 +438,8 @@
         setTimeout(() => el.remove(), 5500);
       }
 
-      function toggleMenu(forceClose) {
-        const open = forceClose ? false : !mnu.classList.contains('open');
+      function toggleMenu(forceOpenOrClose) {
+        const open = typeof forceOpenOrClose === 'boolean' ? forceOpenOrClose : !mnu.classList.contains('open');
         mnu.classList.toggle('open', open);
         navToggle.classList.toggle('active', open);
         darkScreen.classList.toggle('visible', open);
@@ -430,40 +447,135 @@
         if (open && isAdmin(currentUser)) loadAdminState();
       }
       navToggle.addEventListener('click', () => toggleMenu());
-      darkScreen.addEventListener('click', () => toggleMenu(true));
+      darkScreen.addEventListener('click', () => toggleMenu(false));
       document.getElementById('fsBtn').addEventListener('click', () => {
         if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
         else document.exitFullscreen().catch(() => {});
-        toggleMenu(true);
+        toggleMenu(false);
       });
 
       // ============================================================
-      // 3D GAME LADEN
+      // ECHTE 3D GAME LADEN (met &testtools=1 voor Admins & &ads=0)
       // ============================================================
-      serverMode.value = localStorage.getItem('eggs_v9_mode') || 'custom';
-      tablesInput.value = localStorage.getItem('eggs_v9_tables') || '10';
+      tablesInput.value = localStorage.getItem('eggs_v10_tables') || '10';
+      themeSelect.value = localStorage.getItem('eggs_v10_theme') || 'winter';
 
       function load3DGame() {
-        const mode = serverMode.value;
         const tables = tablesInput.value.trim() || '10';
-        localStorage.setItem('eggs_v9_mode', mode);
-        localStorage.setItem('eggs_v9_tables', tables);
+        const theme = themeSelect.value || 'winter';
+        localStorage.setItem('eggs_v10_tables', tables);
+        localStorage.setItem('eggs_v10_theme', theme);
+
+        const adminMode = isAdmin(currentUser);
+        lastLoadedAdminState = adminMode;
 
         let url = BASE_GAME_URL +
           '?timestables=' + encodeURIComponent(tables) +
-          '&lang=nl&swap=1&theme=' + encodeURIComponent(CONFIG.LOCKED_THEME) +
-          '&r=' + Date.now();
+          '&lang=nl&swap=1&ads=0';
 
-        if (mode === 'custom') {
-          url += '&multiplayer=' + encodeURIComponent(WS_BASE + '/server1');
-        }
-        gameSrc.setAttribute('data', url);
+        if (theme === 'winter') url += '&theme=winter';
+        if (adminMode) url += '&testtools=1';
+        url += '&v=' + Date.now();
+
+        gameFrame.src = url;
       }
 
       document.getElementById('applyBtn').addEventListener('click', () => {
         load3DGame();
-        toggleMenu(true);
+        toggleMenu(false);
       });
+
+      // ============================================================
+      // ECHTE ttSave postMessage BRIDGE TUSSEN 3D GAME EN ONZE SERVER!
+      // ============================================================
+      window.addEventListener('message', async (event) => {
+        const msg = event.data;
+        if (!msg || msg.ns !== 'ttSave' || !msg.op) return;
+        const src = event.source;
+        if (!src) return;
+
+        const reply = (payload) => {
+          try {
+            src.postMessage({ ns: 'ttSave', reqId: msg.reqId, ...payload }, '*');
+          } catch (e) {}
+        };
+
+        if (msg.op === 'me') {
+          if (currentUser) {
+            ttSaveStatus.textContent = '🟢 Gekoppeld aan 3D Game (ttSave actief)';
+            reply({ ok: true, uid: currentUser.id, name: currentUser.name || 'Speler' });
+          } else {
+            reply({ ok: false, error: 'not_logged_in' });
+          }
+          return;
+        }
+
+        if (msg.op === 'openLogin') {
+          toggleMenu(true);
+          reply({ ok: true, opened: true });
+          return;
+        }
+
+        if (msg.op === 'load') {
+          const token = getToken();
+          if (!token) return reply({ ok: false, error: 'not_logged_in' });
+          try {
+            const res = await fetch(API_BASE + '/api/ttsave/load', {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+              ttSaveStatus.textContent = data.payloadJson
+                ? '🟢 3D Save geladen vanaf jouw custom server!'
+                : '🟡 Nieuw account — 3D game stuurt zo je save-data op...';
+              reply({ ok: true, payloadJson: data.payloadJson || null });
+            } else {
+              reply({ ok: false, error: data.error || 'load_failed' });
+            }
+          } catch (e) {
+            reply({ ok: false, error: 'network_error' });
+          }
+          return;
+        }
+
+        if (msg.op === 'save') {
+          const token = getToken();
+          if (!token) return reply({ ok: false, error: 'not_logged_in' });
+          try {
+            const res = await fetch(API_BASE + '/api/ttsave/save', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token
+              },
+              body: JSON.stringify({ slot: msg.slot || 1, payloadJson: msg.payloadJson })
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+              ttSaveStatus.textContent = '🟢 3D Save opgeslagen op jouw server (' + new Date().toLocaleTimeString('nl-NL') + ')';
+              reply({ ok: true });
+              if (isAdmin(currentUser)) loadAdminState();
+            } else {
+              reply({ ok: false, error: data.error || 'save_failed' });
+            }
+          } catch (e) {
+            reply({ ok: false, error: 'network_error' });
+          }
+        }
+      });
+
+      function notify3DGameLogin(user) {
+        if (!user || !gameFrame.contentWindow) return;
+        try {
+          gameFrame.contentWindow.postMessage({
+            ns: 'ttSave',
+            event: 'login',
+            ok: true,
+            uid: user.id,
+            name: user.name || 'Speler'
+          }, '*');
+        } catch (e) {}
+      }
 
       // ============================================================
       // AUTH
@@ -485,14 +597,16 @@
         setFb(authFeedback, '', false);
       });
 
-      function renderUser(u) {
+      function renderUser(u, triggerReloadIfRoleChanged = false) {
         currentUser = u;
         if (!u) {
           document.getElementById('loggedOutBox').style.display = 'block';
           document.getElementById('loggedInBox').style.display = 'none';
           document.getElementById('adminSection').style.display = 'none';
+          if (lastLoadedAdminState === true) load3DGame();
           return;
         }
+
         document.getElementById('loggedOutBox').style.display = 'none';
         document.getElementById('loggedInBox').style.display = 'block';
         document.getElementById('userName').textContent = u.name || 'Speler';
@@ -504,11 +618,14 @@
         badge.textContent = role.toUpperCase();
         badge.className = 'role-badge role-' + role;
 
-        if (isAdmin(u)) {
-          document.getElementById('adminSection').style.display = 'block';
-          loadAdminState();
+        const nowAdmin = isAdmin(u);
+        document.getElementById('adminSection').style.display = nowAdmin ? 'block' : 'none';
+        if (nowAdmin) loadAdminState();
+
+        if (triggerReloadIfRoleChanged && lastLoadedAdminState !== nowAdmin) {
+          load3DGame();
         } else {
-          document.getElementById('adminSection').style.display = 'none';
+          notify3DGameLogin(u);
         }
       }
 
@@ -518,27 +635,31 @@
         const password = document.getElementById('authPassword').value;
         const name = document.getElementById('authName').value.trim();
         const ep = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        const res = await fetch(API_BASE + ep, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name })
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
+        try {
+          const res = await fetch(API_BASE + ep, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            if (data.needsVerification) {
+              pendingVerifyEmail = email;
+              document.getElementById('verifyBox').style.display = 'block';
+            }
+            return setFb(authFeedback, data.message || data.error || 'Mislukt', true);
+          }
           if (data.needsVerification) {
             pendingVerifyEmail = email;
             document.getElementById('verifyBox').style.display = 'block';
+            return setFb(authFeedback, data.message, false);
           }
-          return setFb(authFeedback, data.message || data.error || 'Mislukt', true);
+          setToken(data.token);
+          renderUser(data.user, true);
+          showToast('✅ Ingelogd', 'Welkom ' + data.user.name + (isAdmin(data.user) ? ' (3D Admin Tools actief!)' : ''));
+        } catch (err) {
+          setFb(authFeedback, 'Server niet bereikbaar.', true);
         }
-        if (data.needsVerification) {
-          pendingVerifyEmail = email;
-          document.getElementById('verifyBox').style.display = 'block';
-          return setFb(authFeedback, data.message, false);
-        }
-        setToken(data.token);
-        renderUser(data.user);
-        showToast('✅ Ingelogd', 'Welkom ' + data.user.name);
       });
 
       document.getElementById('verifySubmitBtn').addEventListener('click', async () => {
@@ -552,12 +673,12 @@
         if (!res.ok || !data.ok) return setFb(authFeedback, data.error || 'Code fout', true);
         document.getElementById('verifyBox').style.display = 'none';
         setToken(data.token);
-        renderUser(data.user);
+        renderUser(data.user, true);
       });
 
       document.getElementById('logoutBtn').addEventListener('click', () => {
         setToken('');
-        renderUser(null);
+        renderUser(null, true);
       });
 
       function initGoogle() {
@@ -574,7 +695,7 @@
               const data = await res.json();
               if (res.ok && data.ok) {
                 setToken(data.token);
-                renderUser(data.user);
+                renderUser(data.user, true);
                 showToast('✅ Ingelogd met Google', 'Welkom ' + data.user.name);
               } else {
                 setFb(authFeedback, data.error || 'Google login mislukt', true);
@@ -590,7 +711,7 @@
       }
 
       // ============================================================
-      // ADMIN PANEL -> 3D GAME DATA
+      // ADMIN PANEL ACTIES
       // ============================================================
       async function loadAdminState() {
         const token = getToken();
@@ -602,98 +723,123 @@
           const data = await res.json();
           if (!res.ok || !data.ok) return;
 
-          cachedProfiles = data.gameProfiles || [];
-          const prev = profile3dSelect.value;
-          profile3dSelect.innerHTML = `<option value="ALL">🌍 Alle 3D spelers (${cachedProfiles.length})</option>`;
-          cachedProfiles.forEach((p) => {
+          cachedAdminUsers = data.users || [];
+          const prev = adminTarget.value;
+          adminTarget.innerHTML = '';
+
+          const optSelf = document.createElement('option');
+          optSelf.value = 'SELF';
+          optSelf.textContent = '👑 Mezelf (' + (currentUser ? currentUser.email : '') + ')';
+          adminTarget.appendChild(optSelf);
+
+          const optAll = document.createElement('option');
+          optAll.value = 'ALL';
+          optAll.textContent = `🌍 Alle accounts (${cachedAdminUsers.length})`;
+          adminTarget.appendChild(optAll);
+
+          cachedAdminUsers.forEach((u) => {
+            if (currentUser && u.id === currentUser.id) return;
             const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = `🎮 3D ID: ${p.id}`;
-            profile3dSelect.appendChild(opt);
+            opt.value = u.id;
+            opt.textContent = `${u.name} [${(u.role || 'player').toUpperCase()}] ${u.has3DSave ? '💾' : ''} (${u.email})`;
+            adminTarget.appendChild(opt);
           });
 
-          if (Array.from(profile3dSelect.options).some(o => o.value === prev)) {
-            profile3dSelect.value = prev;
-          } else if (cachedProfiles.length > 0) {
-            profile3dSelect.value = cachedProfiles[0].id;
+          if (Array.from(adminTarget.options).some(o => o.value === prev)) {
+            adminTarget.value = prev;
           }
-
-          syncJsonEditor();
-          adminLogs.textContent = (data.logs && data.logs.length) ? data.logs.join('\n') : 'Nog geen 3D data ontvangen...';
+          syncSaveEditor();
+          adminLogs.textContent = (data.logs && data.logs.length) ? data.logs.join('\n') : 'Nog geen logs.';
         } catch (e) {}
       }
 
-      function syncJsonEditor() {
-        const sel = profile3dSelect.value;
-        const found = cachedProfiles.find(p => p.id === sel) || cachedProfiles[0];
-        if (found) {
-          raw3dJson.value = JSON.stringify(found.data || {}, null, 2);
+      function syncSaveEditor() {
+        const val = adminTarget.value;
+        const targetId = (val === 'SELF' && currentUser) ? currentUser.id : val;
+        const u = cachedAdminUsers.find(x => x.id === targetId);
+        if (u && u.ttSaveJson) {
+          try {
+            rawSaveEditor.value = JSON.stringify(JSON.parse(u.ttSaveJson), null, 2);
+          } catch (e) {
+            rawSaveEditor.value = u.ttSaveJson;
+          }
         } else {
-          raw3dJson.value = '';
+          rawSaveEditor.value = '';
         }
       }
-      profile3dSelect.addEventListener('change', syncJsonEditor);
+      adminTarget.addEventListener('change', syncSaveEditor);
 
       document.getElementById('adminRefreshBtn').addEventListener('click', async () => {
         await loadAdminState();
-        setFb(adminFeedback, '✅ 3D Spelers & data ververst!', false);
+        setFb(adminFeedback, '✅ Accounts & 3D save-data ververst!', false);
       });
 
       document.getElementById('adminGiveBtn').addEventListener('click', async () => {
         const token = getToken();
         if (!token) return setFb(adminFeedback, '❌ Log eerst in.', true);
-        const targetId = profile3dSelect.value || 'ALL';
+        const targetId = adminTarget.value || 'SELF';
         const coins = parseBig(document.getElementById('giveCoins').value);
-        const diamonds = parseBig(document.getElementById('giveDiamonds').value);
         const speed = parseBig(document.getElementById('giveSpeed').value);
         const role = document.getElementById('giveRole').value;
         const item = document.getElementById('givePresetItem').value;
 
-        if (coins === '0' && diamonds === '0' && speed === '0' && !role && !item) {
-          return setFb(adminFeedback, '⚠️ Vul een waarde of item in.', true);
+        if (coins === '0' && speed === '0' && !role && !item) {
+          return setFb(adminFeedback, '⚠️ Vul een waarde in of kies een rang/unlock.', true);
         }
 
         const res = await fetch(API_BASE + '/api/admin/give', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ targetType: '3D', targetId, coins, diamonds, speed, role, item })
+          body: JSON.stringify({ targetId, coins, speed, role, item })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          setFb(adminFeedback, `✅ Aangepast (${data.updated3DCount} 3D profiel): ${data.summary}`, false);
+          const msg = `✅ ${data.summary}` + (data.patched3D ? ` (${data.patched3D} 3D save aangepast!)` : (data.note ? ` — ${data.note}` : ''));
+          setFb(adminFeedback, msg, false);
           document.getElementById('giveCoins').value = '0';
-          document.getElementById('giveDiamonds').value = '0';
           document.getElementById('giveSpeed').value = '0';
           document.getElementById('giveRole').value = '';
           document.getElementById('givePresetItem').value = '';
           await loadAdminState();
-          // Herlaad 3D game zodat hij direct de aangepaste custom progress van onze server ophaalt!
+          if (data.patched3D > 0) load3DGame();
+        } else {
+          setFb(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
+        }
+      });
+
+      document.getElementById('saveRawBtn').addEventListener('click', async () => {
+        const val = adminTarget.value;
+        if (val === 'ALL') return setFb(adminFeedback, '⚠️ Kies één speler voor de JSON editor.', true);
+        const txt = rawSaveEditor.value.trim();
+        if (!txt) return setFb(adminFeedback, '⚠️ Geen JSON om op te slaan.', true);
+        try { JSON.parse(txt); } catch (e) { return setFb(adminFeedback, '❌ Ongeldige JSON.', true); }
+
+        const res = await fetch(API_BASE + '/api/admin/save-ttsave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+          body: JSON.stringify({ targetId: val, payloadJson: txt })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          setFb(adminFeedback, '✅ 3D JSON opgeslagen! Spel wordt herladen...', false);
+          await loadAdminState();
           load3DGame();
         } else {
           setFb(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
         }
       });
 
-      document.getElementById('saveRawJsonBtn').addEventListener('click', async () => {
-        const sel = profile3dSelect.value;
-        const found = cachedProfiles.find(p => p.id === sel) || cachedProfiles[0];
-        if (!found) return setFb(adminFeedback, '❌ Nog geen 3D speler-ID gedetecteerd.', true);
-        let parsed = null;
-        try { parsed = JSON.parse(raw3dJson.value); } catch (e) {
-          return setFb(adminFeedback, '❌ Ongeldige JSON syntax.', true);
-        }
-        const res = await fetch(API_BASE + '/api/admin/save-3d-json', {
+      document.getElementById('adminAnnounceBtn').addEventListener('click', async () => {
+        const text = document.getElementById('adminAnnounceText').value.trim();
+        if (!text) return;
+        const res = await fetch(API_BASE + '/api/admin/announce', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ profileId: found.id, data: parsed })
+          body: JSON.stringify({ text })
         });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          setFb(adminFeedback, '✅ 3D JSON opgeslagen & spel herladen!', false);
-          await loadAdminState();
-          load3DGame();
-        } else {
-          setFb(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
+        if (res.ok) {
+          document.getElementById('adminAnnounceText').value = '';
+          setFb(adminFeedback, '✅ Melding verstuurd!', false);
         }
       });
 
@@ -701,22 +847,27 @@
         try {
           if (eventWs) eventWs.close();
           eventWs = new WebSocket(WS_BASE + '/site-events');
-          eventWs.onmessage = (ev) => {
+          eventWs.onmessage = async (ev) => {
             let msg = null;
             try { msg = JSON.parse(ev.data); } catch (e) { return; }
-            if (msg.type === 'profiles_changed' && isAdmin(currentUser)) {
-              loadAdminState();
-            } else if (msg.type === 'gift') {
-              showToast('🎁 3D Data Aangepast!', msg.summary);
-            } else if (msg.type === 'announcement') {
+            if (msg.type === 'announcement') {
               showToast('📢 Admin Bericht', msg.text);
+            } else if (msg.type === 'admin_update') {
+              if (currentUser && (msg.targetId === 'ALL' || msg.targetId === currentUser.id)) {
+                showToast('🎁 Admin Update!', msg.summary);
+                const r = await fetch(API_BASE + '/api/me', { headers: { Authorization: 'Bearer ' + getToken() } });
+                const d = await r.json();
+                if (r.ok && d.ok) renderUser(d.user, true);
+                if (msg.reloadGame) load3DGame();
+              }
+            } else if (msg.type === 'ttsave_synced' && isAdmin(currentUser)) {
+              loadAdminState();
             }
           };
         } catch (e) {}
       }
 
       (async function init() {
-        load3DGame();
         initGoogle();
         connectEvents();
         const token = getToken();
@@ -724,9 +875,12 @@
           try {
             const res = await fetch(API_BASE + '/api/me', { headers: { Authorization: 'Bearer ' + token } });
             const data = await res.json();
-            if (res.ok && data.ok) renderUser(data.user);
+            if (res.ok && data.ok) {
+              renderUser(data.user, false);
+            }
           } catch (e) {}
         }
+        load3DGame();
       })();
     })();
   </script>
