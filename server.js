@@ -98,9 +98,10 @@ function readJsonBody(req) {
 }
 
 function sendJson(req, res, status, obj) {
+  const headers = (req && req.headers) ? req.headers : {};
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Origin': headers.origin || '*',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
@@ -109,7 +110,8 @@ function sendJson(req, res, status, obj) {
 }
 
 function getAuthUser(req) {
-  const authHeader = req.headers.authorization || '';
+  const headers = (req && req.headers) ? req.headers : {};
+  const authHeader = headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   const uid = db.sessions[token];
   if (!uid || !db.users[uid]) return null;
@@ -137,35 +139,37 @@ function broadcastSiteEvent(payload) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const urlPath = (req.url || '/').split('?')[0];
+  try {
+    if (!req || !res) return;
+    const headers = req.headers || {};
+    const urlPath = (req.url || '/').split('?')[0];
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': req.headers.origin || '*',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    });
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET' && (urlPath === '/' || urlPath === '/index.html')) {
-    const filePath = path.join(__dirname, 'index.html');
-    if (fs.existsSync(filePath)) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(fs.readFileSync(filePath, 'utf8'));
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': headers.origin || '*',
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      });
+      res.end();
       return;
     }
-  }
 
-  if (req.method === 'GET' && urlPath === '/api/health') {
-    sendJson(req, res, 200, { ok: true, usersCount: Object.keys(db.users).length });
-    return;
-  }
+    if (req.method === 'GET' && (urlPath === '/' || urlPath === '/index.html')) {
+      const filePath = path.join(__dirname, 'index.html');
+      if (fs.existsSync(filePath)) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(fs.readFileSync(filePath, 'utf8'));
+        return;
+      }
+    }
 
-  if (req.method === 'POST' && urlPath === '/api/auth/register') {
-    try {
+    if (req.method === 'GET' && urlPath === '/api/health') {
+      sendJson(req, res, 200, { ok: true, usersCount: Object.keys(db.users).length });
+      return;
+    }
+
+    if (req.method === 'POST' && urlPath === '/api/auth/register') {
       const body = await readJsonBody(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
@@ -218,14 +222,10 @@ const server = http.createServer(async (req, res) => {
           message: `Verificatiecode voor ${email}: ${verifyCode} (voor @ll.flevion.nl is geen code nodig)`
         });
       }
-    } catch (err) {
-      sendJson(req, 500, { ok: false, error: 'Serverfout bij registreren.' });
+      return;
     }
-    return;
-  }
 
-  if (req.method === 'POST' && urlPath === '/api/auth/verify') {
-    try {
+    if (req.method === 'POST' && urlPath === '/api/auth/verify') {
       const body = await readJsonBody(req);
       const user = findUserByEmail(body.email);
       if (!user) {
@@ -241,14 +241,10 @@ const server = http.createServer(async (req, res) => {
       saveDB();
       const token = createSession(user.id);
       sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
-    } catch (err) {
-      sendJson(req, 500, { ok: false, error: 'Serverfout bij verifiëren.' });
+      return;
     }
-    return;
-  }
 
-  if (req.method === 'POST' && urlPath === '/api/auth/login') {
-    try {
+    if (req.method === 'POST' && urlPath === '/api/auth/login') {
       const body = await readJsonBody(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
@@ -272,14 +268,10 @@ const server = http.createServer(async (req, res) => {
 
       const token = createSession(user.id);
       sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
-    } catch (err) {
-      sendJson(req, 500, { ok: false, error: 'Serverfout bij inloggen.' });
+      return;
     }
-    return;
-  }
 
-  if (req.method === 'POST' && urlPath === '/api/auth/google') {
-    try {
+    if (req.method === 'POST' && urlPath === '/api/auth/google') {
       const body = await readJsonBody(req);
       if (!body.credential) {
         sendJson(req, res, 400, { ok: false, error: 'Geen Google token ontvangen.' });
@@ -327,39 +319,35 @@ const server = http.createServer(async (req, res) => {
 
       const token = createSession(user.id);
       sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
-    } catch (err) {
-      sendJson(req, 500, { ok: false, error: 'Serverfout bij Google login.' });
-    }
-    return;
-  }
-
-  if (req.method === 'GET' && urlPath === '/api/me') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJson(req, res, 401, { ok: false, error: 'Niet ingelogd.' });
       return;
     }
-    sendJson(req, res, 200, { ok: true, user: publicUser(user) });
-    return;
-  }
 
-  if (req.method === 'GET' && urlPath === '/api/admin/users') {
-    const admin = getAuthUser(req);
-    if (!isAdmin(admin)) {
-      sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
+    if (req.method === 'GET' && urlPath === '/api/me') {
+      const user = getAuthUser(req);
+      if (!user) {
+        sendJson(req, res, 401, { ok: false, error: 'Niet ingelogd.' });
+        return;
+      }
+      sendJson(req, res, 200, { ok: true, user: publicUser(user) });
       return;
     }
-    sendJson(req, res, 200, { ok: true, users: Object.values(db.users).map(publicUser) });
-    return;
-  }
 
-  if (req.method === 'POST' && urlPath === '/api/admin/give') {
-    const admin = getAuthUser(req);
-    if (!isAdmin(admin)) {
-      sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
+    if (req.method === 'GET' && urlPath === '/api/admin/users') {
+      const admin = getAuthUser(req);
+      if (!isAdmin(admin)) {
+        sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
+        return;
+      }
+      sendJson(req, res, 200, { ok: true, users: Object.values(db.users).map(publicUser) });
       return;
     }
-    try {
+
+    if (req.method === 'POST' && urlPath === '/api/admin/give') {
+      const admin = getAuthUser(req);
+      if (!isAdmin(admin)) {
+        sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
+        return;
+      }
       const body = await readJsonBody(req);
       const { targetId, diamonds = '0', coins = '0', speed = '0', role = '', item = '' } = body;
       const dBig = toBig(diamonds);
@@ -407,39 +395,51 @@ const server = http.createServer(async (req, res) => {
       });
 
       sendJson(req, res, 200, { ok: true, count: targets.length, summary });
-    } catch (err) {
-      sendJson(req, 500, { ok: false, error: 'Serverfout bij geven.' });
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && urlPath === '/api/admin/announce') {
-    const admin = getAuthUser(req);
-    if (!isAdmin(admin)) {
-      sendJson(req, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
-    const body = await readJsonBody(req);
-    const text = String(body.text || '').trim().slice(0, 200);
-    if (!text) {
-      sendJson(req, 400, { ok: false, error: 'Bericht is leeg.' });
+
+    if (req.method === 'POST' && urlPath === '/api/admin/announce') {
+      const admin = getAuthUser(req);
+      if (!isAdmin(admin)) {
+        sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const text = String(body.text || '').trim().slice(0, 200);
+      if (!text) {
+        sendJson(req, 400, { ok: false, error: 'Bericht is leeg.' });
+        return;
+      }
+      broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
+      sendJson(req, 200, { ok: true });
       return;
     }
-    broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
-    sendJson(req, 200, { ok: true });
-    return;
-  }
 
-  sendJson(res, 404, { ok: false, error: 'Niet gevonden' });
+    sendJson(req, res, 404, { ok: false, error: 'Niet gevonden' });
+  } catch (err) {
+    console.error('Server request error:', err);
+    try {
+      if (res && !res.headersSent) {
+        sendJson(req, res, 500, { ok: false, error: 'Interne serverfout' });
+      }
+    } catch (_) {}
+  }
 });
 
 const wss = new WebSocketServer({ server });
 wss.on('connection', (ws, req) => {
-  const channelName = (req.url || '').split('?')[0];
+  const channelName = ((req && req.url) || '').split('?')[0];
   if (channelName === '/site-events') {
     siteEventClients.add(ws);
     ws.on('close', () => siteEventClients.delete(ws));
   }
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
 });
 
 server.listen(PORT, () => {
