@@ -368,7 +368,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && urlPath === '/api/health') {
       sendJson(req, res, 200, {
         ok: true,
-        version: '10.0.0',
+        version: '11.0.0',
         usersCount: Object.keys(db.users).length
       });
       return;
@@ -751,5 +751,5 @@ process.on('uncaughtException', (err) => console.error('Uncaught:', err));
 process.on('unhandledRejection', (reason) => console.error('Unhandled:', reason));
 
 server.listen(PORT, () => {
-  console.log(`🚀 3D Eggs ttSave & Admin Server v10 live op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
+  console.log(`🚀 3D Eggs ttSave & Admin Server v11 live op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
 });
