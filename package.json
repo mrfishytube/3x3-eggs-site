@@ -1,0 +1,12 @@
+{
+  "name": "3x3-eggs-custom-server",
+  "version": "2.0.0",
+  "description": "Custom 3x3 Eggs website met Google Login, Admin Panel, vast thema en eigen WebSocket servers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

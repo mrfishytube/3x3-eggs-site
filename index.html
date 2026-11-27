@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="nl-NL">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="HandheldFriendly" content="true">
+  <title>3x3 Eggs — Custom Servers</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f172a;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #f8fafc;
+    }
+
+    #gameSrc {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Menu Toggle Knop */
+    #nav-toggle {
+      position: fixed;
+      left: 0;
+      top: 24px;
+      z-index: 1002;
+      background: rgba(37, 99, 235, 0.92);
+      color: #fff;
+      width: 46px;
+      height: 44px;
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: left 0.25s ease, background 0.2s;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.35);
+    }
+    #nav-toggle:hover { background: #1d4ed8; }
+    #nav-toggle.active {
+      left: 330px;
+      background: #ef4444;
+    }
+
+    /* Zijmenu */
+    #mnu {
+      position: fixed;
+      top: 0;
+      left: -330px;
+      width: 330px;
+      height: 100%;
+      background: #1e293b;
+      z-index: 1001;
+      padding: 20px;
+      overflow-y: auto;
+      transition: left 0.25s ease;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    }
+    #mnu.open { left: 0; }
+    #mnu h2 {
+      font-size: 1.25rem;
+      color: #38bdf8;
+      margin-bottom: 14px;
+    }
+    #mnu h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin: 18px 0 8px;
+    }
+
+    .card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .admin-card {
+      background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #38bdf8;
+      flex-shrink: 0;
+    }
+    .user-meta { min-width: 0; flex: 1; }
+    .user-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .user-email {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .role-admin { background: #f59e0b; color: #0f172a; }
+    .role-vip { background: #a855f7; color: #fff; }
+    .role-mod { background: #10b981; color: #0f172a; }
+    .role-player { background: #334155; color: #e2e8f0; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .stat-box {
+      background: #1e293b;
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+    }
+    .stat-box .val {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #38bdf8;
+    }
+    .stat-box .lbl {
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    .items-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .item-chip {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.75rem;
+      color: #fde68a;
+    }
+
+    .google-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 8px;
+      min-height: 44px;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      margin-bottom: 12px;
+      color: #94a3b8;
+    }
+    .status.online { border-color: #10b981; color: #6ee7b7; }
+    .status.offline { border-color: #ef4444; color: #fca5a5; }
+
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.86rem;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-gold { background: #f59e0b; color: #0f172a; }
+    .btn-gold:hover { background: #d97706; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary { background: #334155; color: #fff; }
+    .btn-secondary:hover { background: #475569; }
+
+    .admin-feedback {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      min-height: 16px;
+      color: #6ee7b7;
+    }
+
+    #darkScreen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 1000;
+    }
+    #darkScreen.visible { display: block; }
+
+    /* Live Gift / Admin Toast */
+    #toastContainer {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 320px;
+      pointer-events: none;
+    }
+    .toast {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid #f59e0b;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      font-size: 0.86rem;
+      line-height: 1.35;
+      animation: slideIn 0.25s ease;
+    }
+    .toast strong { color: #fbbf24; }
+    @keyframes slideIn {
+      from { transform: translateX(30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <button id="nav-toggle" aria-label="Menu">☰</button>
+  <div id="darkScreen"></div>
+  <div id="toastContainer"></div>
+
+  <nav id="mnu">
+    <h2>🥚 3x3 Eggs</h2>
+
+    <h3>Google Account</h3>
+    <div class="card">
+      <div id="loggedOutBox">
+        <div style="font-size: 0.84rem; color: #cbd5e1; margin-bottom: 6px;">
+          Maak een account of log in met Google:
+        </div>
+        <div id="googleBtnContainer" class="google-wrap"></div>
+      </div>
+
+      <div id="loggedInBox" style="display:none;">
+        <div class="user-row">
+          <img id="userAvatar" class="user-avatar" src="" alt="Profielfoto">
+          <div class="user-meta">
+            <div class="user-name">
+              <span id="userName"></span>
+              <span id="userRoleBadge" class="role-badge role-player">Speler</span>
+            </div>
+            <div id="userEmail" class="user-email"></div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="val" id="statDiamonds">0</div>
+            <div class="lbl">💎 Diamanten</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="statCoins">0</div>
+            <div class="lbl">🪙 Munten</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="statSpeed">0</div>
+            <div class="lbl">⚡ Snelheid</div>
+          </div>
+        </div>
+
+        <div id="userItemsWrap" style="display:none; margin-top: 8px;">
+          <div style="font-size: 0.72rem; color: #94a3b8;">Jouw items:</div>
+          <div id="userItemsList" class="items-list"></div>
+        </div>
+
+        <button class="btn btn-danger" id="logoutBtn" style="margin-top: 10px;">Uitloggen</button>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL: Alleen zichtbaar voor mr.fish.ytube@gmail.com -->
+    <div id="adminSection" style="display:none;">
+      <h3 style="color:#fbbf24;">👑 Admin Panel</h3>
+      <div class="admin-card">
+        <div class="field">
+          <label for="adminTarget">Ontvanger kiezen</label>
+          <select id="adminTarget">
+            <option value="SELF">Mezelf (mr.fish.ytube@gmail.com)</option>
+            <option value="ALL">🌍 Iedereen (alle accounts)</option>
+          </select>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label for="giveDiamonds">💎 Diamanten</label>
+            <input type="number" id="giveDiamonds" value="0" placeholder="bijv. 1000">
+          </div>
+          <div class="field">
+            <label for="giveCoins">🪙 Munten</label>
+            <input type="number" id="giveCoins" value="0" placeholder="bijv. 50000">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label for="giveSpeed">⚡ Snelheid</label>
+            <input type="number" id="giveSpeed" value="0" placeholder="bijv. 500">
+          </div>
+          <div class="field">
+            <label for="giveRole">🏷️ Rang</label>
+            <select id="giveRole">
+              <option value="">Niet wijzigen</option>
+              <option value="player">Speler</option>
+              <option value="vip">VIP</option>
+              <option value="mod">Mod</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="givePresetItem">🎁 Item / Ei geven</label>
+          <select id="givePresetItem">
+            <option value="">-- Kies een item (optioneel) --</option>
+            <option value="🥚 Gouden Ei">🥚 Gouden Ei</option>
+            <option value="🐉 Regenboog Draak">🐉 Regenboog Draak</option>
+            <option value="👑 VIP Kroon">👑 VIP Kroon</option>
+            <option value="⚡ Ultra Speed Boost">⚡ Ultra Speed Boost</option>
+            <option value="🛡️ Admin Schild">🛡️ Admin Schild</option>
+            <option value="❄️ Winter Legende">❄️ Winter Legende</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="giveCustomItem">Of typ een eigen item-naam</label>
+          <input type="text" id="giveCustomItem" placeholder="Bijv. Mega Vis Ei">
+        </div>
+
+        <button class="btn btn-gold" id="adminGiveBtn">🎁 Geef aan speler(s)</button>
+        <button class="btn btn-secondary" id="adminRefreshUsersBtn">🔄 Spelerslijst vernieuwen</button>
+
+        <hr style="border-top: 1px solid #334155; margin: 12px 0;">
+
+        <div class="field">
+          <label for="adminAnnounceText">📢 Server-bericht sturen</label>
+          <input type="text" id="adminAnnounceText" placeholder="Bericht voor alle spelers...">
+        </div>
+        <button class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
+
+        <div id="adminFeedback" class="admin-feedback"></div>
+      </div>
+    </div>
+
+    <h3>Custom Servers</h3>
+    <div id="serverStatus" class="status">Server status checken...</div>
+
+    <div class="field">
+      <label for="serverSelect">Kies Server</label>
+      <select id="serverSelect"></select>
+    </div>
+
+    <div class="field">
+      <label for="tablesInput">Tafels (bijv. 10 of 1,2,5,10)</label>
+      <input type="text" id="tablesInput" value="10">
+    </div>
+
+    <button class="btn btn-primary" id="applyBtn">Verbinden &amp; herladen</button>
+    <button class="btn btn-secondary" id="fsBtn">⛶ Volledig scherm</button>
+  </nav>
+
+  <object
+    id="gameSrc"
+    scrolling="no"
+    height="100%"
+    width="100%"
+    frameborder="0"
+    allowfullscreen="true"
+    data="">
+  </object>
+
+  <script>
+    (function () {
+      // ============================================================
+      // CONFIGURATIE
+      // ============================================================
+      const CONFIG = {
+        GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
+        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
+
+        // Laat leeg als index.html op dezelfde server draait als server.js
+        API_BASE_URL: '',
+
+        // Vast thema (niet door gebruikers te wijzigen)
+        LOCKED_THEME: 'winter',
+
+        // Jouw eigen custom WebSocket servers (pas na upload jouw domein aan)
+        SERVERS: [
+          { label: 'NL Custom Server 1', url: 'wss://jouw-server.onrender.com/server1' },
+          { label: 'NL Custom Server 2', url: 'wss://jouw-server.onrender.com/server2' },
+          { label: 'Vrienden / VIP Server', url: 'wss://jouw-server.onrender.com/vip' },
+          { label: 'Lokaal testen (localhost:3000)', url: 'ws://localhost:3000/server1' }
+        ]
+      };
+
+      const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
+
+      // DOM elementen
+      const navToggle = document.getElementById('nav-toggle');
+      const mnu = document.getElementById('mnu');
+      const darkScreen = document.getElementById('darkScreen');
+      const gameSrc = document.getElementById('gameSrc');
+      const serverSelect = document.getElementById('serverSelect');
+      const tablesInput = document.getElementById('tablesInput');
+      const serverStatus = document.getElementById('serverStatus');
+      const toastContainer = document.getElementById('toastContainer');
+
+      const loggedOutBox = document.getElementById('loggedOutBox');
+      const loggedInBox = document.getElementById('loggedInBox');
+      const googleBtnContainer = document.getElementById('googleBtnContainer');
+      const userAvatar = document.getElementById('userAvatar');
+      const userName = document.getElementById('userName');
+      const userEmail = document.getElementById('userEmail');
+      const userRoleBadge = document.getElementById('userRoleBadge');
+      const statDiamonds = document.getElementById('statDiamonds');
+      const statCoins = document.getElementById('statCoins');
+      const statSpeed = document.getElementById('statSpeed');
+      const userItemsWrap = document.getElementById('userItemsWrap');
+      const userItemsList = document.getElementById('userItemsList');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      const adminSection = document.getElementById('adminSection');
+      const adminTarget = document.getElementById('adminTarget');
+      const adminFeedback = document.getElementById('adminFeedback');
+
+      let currentUser = null;
+      let eventWs = null;
+
+      function getApiBase() {
+        if (CONFIG.API_BASE_URL) return CONFIG.API_BASE_URL.replace(/\/+$/, '');
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          return window.location.origin;
+        }
+        return 'http://localhost:3000';
+      }
+
+      function getToken() {
+        return localStorage.getItem('eggs_session_token') || '';
+      }
+
+      function showToast(title, body) {
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.innerHTML = '<strong>' + escapeHtml(title) + '</strong><br>' + escapeHtml(body);
+        toastContainer.appendChild(el);
+        setTimeout(function () { el.remove(); }, 6000);
+      }
+
+      function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function (m) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+        });
+      }
+
+      // Vul de server-lijst
+      CONFIG.SERVERS.forEach(function (srv) {
+        const opt = document.createElement('option');
+        opt.value = srv.url;
+        opt.textContent = srv.label;
+        serverSelect.appendChild(opt);
+      });
+
+      const savedServer = localStorage.getItem('eggs_custom_server');
+      if (savedServer && Array.from(serverSelect.options).some(o => o.value === savedServer)) {
+        serverSelect.value = savedServer;
+      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        serverSelect.value = 'ws://localhost:3000/server1';
+      }
+
+      tablesInput.value = localStorage.getItem('eggs_custom_tables') || '10';
+
+      // ============================================================
+      // MENU & FULLSCREEN
+      // ============================================================
+      function toggleMenu(forceClose) {
+        const open = forceClose ? false : !mnu.classList.contains('open');
+        mnu.classList.toggle('open', open);
+        navToggle.classList.toggle('active', open);
+        darkScreen.classList.toggle('visible', open);
+        navToggle.textContent = open ? '✕' : '☰';
+      }
+
+      navToggle.addEventListener('click', function () { toggleMenu(); });
+      darkScreen.addEventListener('click', function () { toggleMenu(true); });
+
+      document.getElementById('fsBtn').addEventListener('click', function () {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(function () {});
+        } else {
+          document.exitFullscreen().catch(function () {});
+        }
+        toggleMenu(true);
+      });
+
+      // ============================================================
+      // LIVE NOTIFICATIES (GIFT & ADMIN MELDINGEN)
+      // ============================================================
+      function connectSiteEvents() {
+        try {
+          if (eventWs) eventWs.close();
+          const wsBase = getApiBase().replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+          eventWs = new WebSocket(wsBase + '/site-events');
+
+          eventWs.onmessage = function (ev) {
+            let msg = null;
+            try { msg = JSON.parse(ev.data); } catch (e) { return; }
+
+            if (msg.type === 'announcement') {
+              showToast('📢 Admin Bericht', msg.text);
+            } else if (msg.type === 'gift') {
+              const isForMe = currentUser && (msg.targetId === 'ALL' || msg.targetId === currentUser.id);
+              if (isForMe) {
+                showToast('🎁 Je hebt iets gekregen!', msg.summary);
+                refreshMyProfile();
+              }
+            }
+          };
+        } catch (e) {}
+      }
+
+      // ============================================================
+      // GOOGLE ACCOUNT & PROFIEL
+      // ============================================================
+      function decodeJwtPayload(token) {
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64).split('').map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join('')
+          );
+          return JSON.parse(jsonPayload);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function isAdminUser(user) {
+        if (!user || !user.email) return false;
+        return user.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase();
+      }
+
+      function renderUser(user) {
+        currentUser = user;
+        if (!user) {
+          loggedOutBox.style.display = 'block';
+          loggedInBox.style.display = 'none';
+          adminSection.style.display = 'none';
+          return;
+        }
+
+        loggedOutBox.style.display = 'none';
+        loggedInBox.style.display = 'block';
+
+        userName.textContent = user.name || 'Google Gebruiker';
+        userEmail.textContent = user.email || '';
+        userAvatar.src = user.picture || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><rect width="42" height="42" fill="%232563eb"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif">G</text></svg>';
+
+        const role = isAdminUser(user) ? 'admin' : (user.role || 'player');
+        userRoleBadge.textContent = role.toUpperCase();
+        userRoleBadge.className = 'role-badge role-' + role;
+
+        statDiamonds.textContent = Number(user.diamonds || 0).toLocaleString('nl-NL');
+        statCoins.textContent = Number(user.coins || 0).toLocaleString('nl-NL');
+        statSpeed.textContent = Number(user.speed || 0).toLocaleString('nl-NL');
+
+        const items = Array.isArray(user.items) ? user.items : [];
+        if (items.length > 0) {
+          userItemsWrap.style.display = 'block';
+          userItemsList.innerHTML = '';
+          items.forEach(function (item) {
+            const chip = document.createElement('span');
+            chip.className = 'item-chip';
+            chip.textContent = item;
+            userItemsList.appendChild(chip);
+          });
+        } else {
+          userItemsWrap.style.display = 'none';
+        }
+
+        // Toon Admin Panel alleen als mr.fish.ytube@gmail.com is ingelogd
+        if (isAdminUser(user)) {
+          adminSection.style.display = 'block';
+          loadAdminUsers();
+        } else {
+          adminSection.style.display = 'none';
+        }
+      }
+
+      async function refreshMyProfile() {
+        const token = getToken();
+        if (!token) return;
+        try {
+          const res = await fetch(getApiBase() + '/api/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.user) {
+              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+              renderUser(data.user);
+            }
+          }
+        } catch (e) {}
+      }
+
+      async function handleGoogleCredential(response) {
+        if (!response || !response.credential) return;
+        const apiBase = getApiBase();
+
+        try {
+          const res = await fetch(apiBase + '/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.user) {
+              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+              if (data.token) localStorage.setItem('eggs_session_token', data.token);
+              renderUser(data.user);
+              showToast('✅ Ingelogd', 'Welkom ' + data.user.name + '!');
+              return;
+            }
+          }
+        } catch (e) {}
+
+        // Fallback als server lokaal nog uit staat
+        const payload = decodeJwtPayload(response.credential);
+        if (payload) {
+          const fallbackUser = {
+            id: payload.sub,
+            name: payload.name,
+            email: payload.email,
+            picture: payload.picture,
+            role: payload.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase() ? 'admin' : 'player',
+            diamonds: 0,
+            coins: 0,
+            speed: 0,
+            items: []
+          };
+          localStorage.setItem('eggs_google_user', JSON.stringify(fallbackUser));
+          renderUser(fallbackUser);
+        }
+      }
+
+      function initGoogleSignIn() {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          window.google.accounts.id.initialize({
+            client_id: CONFIG.GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredential
+          });
+          googleBtnContainer.innerHTML = '';
+          window.google.accounts.id.renderButton(googleBtnContainer, {
+            theme: 'filled_blue',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 240,
+            locale: 'nl'
+          });
+        } else {
+          setTimeout(initGoogleSignIn, 300);
+        }
+      }
+
+      logoutBtn.addEventListener('click', function () {
+        localStorage.removeItem('eggs_google_user');
+        localStorage.removeItem('eggs_session_token');
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          window.google.accounts.id.disableAutoSelect();
+        }
+        renderUser(null);
+      });
+
+      // ============================================================
+      // ADMIN PANEL ACTIES (Alleen voor mr.fish.ytube@gmail.com)
+      // ============================================================
+      async function loadAdminUsers() {
+        const token = getToken();
+        if (!token) return;
+        try {
+          const res = await fetch(getApiBase() + '/api/admin/users', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.ok || !Array.isArray(data.users)) return;
+
+          const prev = adminTarget.value;
+          adminTarget.innerHTML = '';
+
+          const optSelf = document.createElement('option');
+          optSelf.value = 'SELF';
+          optSelf.textContent = '👑 Mezelf (' + CONFIG.ADMIN_EMAIL + ')';
+          adminTarget.appendChild(optSelf);
+
+          const optAll = document.createElement('option');
+          optAll.value = 'ALL';
+          optAll.textContent = '🌍 Iedereen (' + data.users.length + ' spelers)';
+          adminTarget.appendChild(optAll);
+
+          data.users.forEach(function (u) {
+            if (u.email && u.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase()) return;
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = (u.name || 'Speler') + ' (' + u.email + ')';
+            adminTarget.appendChild(opt);
+          });
+
+          if (Array.from(adminTarget.options).some(o => o.value === prev)) {
+            adminTarget.value = prev;
+          }
+        } catch (e) {}
+      }
+
+      document.getElementById('adminRefreshUsersBtn').addEventListener('click', async function () {
+        adminFeedback.textContent = 'Lijst vernieuwen...';
+        await loadAdminUsers();
+        adminFeedback.textContent = '✅ Spelerslijst bijgewerkt!';
+      });
+
+      document.getElementById('adminGiveBtn').addEventListener('click', async function () {
+        const token = getToken();
+        if (!token) {
+          adminFeedback.textContent = '❌ Server niet verbonden of sessie verlopen.';
+          return;
+        }
+
+        const targetId = adminTarget.value === 'SELF' && currentUser ? currentUser.id : adminTarget.value;
+        const diamonds = parseInt(document.getElementById('giveDiamonds').value, 10) || 0;
+        const coins = parseInt(document.getElementById('giveCoins').value, 10) || 0;
+        const speed = parseInt(document.getElementById('giveSpeed').value, 10) || 0;
+        const role = document.getElementById('giveRole').value;
+        const presetItem = document.getElementById('givePresetItem').value;
+        const customItem = document.getElementById('giveCustomItem').value.trim();
+        const item = customItem || presetItem;
+
+        if (!diamonds && !coins && !speed && !role && !item) {
+          adminFeedback.textContent = '⚠️ Vul minstens één waarde of item in.';
+          return;
+        }
+
+        try {
+          const res = await fetch(getApiBase() + '/api/admin/give', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ targetId, diamonds, coins, speed, role, item })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            adminFeedback.textContent = '✅ Gegeven: ' + data.summary;
+            document.getElementById('giveDiamonds').value = 0;
+            document.getElementById('giveCoins').value = 0;
+            document.getElementById('giveSpeed').value = 0;
+            document.getElementById('giveRole').value = '';
+            document.getElementById('givePresetItem').value = '';
+            document.getElementById('giveCustomItem').value = '';
+            await refreshMyProfile();
+            await loadAdminUsers();
+          } else {
+            adminFeedback.textContent = '❌ Fout: ' + (data.error || 'Kon niet geven');
+          }
+        } catch (e) {
+          adminFeedback.textContent = '❌ Server niet bereikbaar.';
+        }
+      });
+
+      document.getElementById('adminAnnounceBtn').addEventListener('click', async function () {
+        const text = document.getElementById('adminAnnounceText').value.trim();
+        if (!text) return;
+        const token = getToken();
+        try {
+          const res = await fetch(getApiBase() + '/api/admin/announce', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ text })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            document.getElementById('adminAnnounceText').value = '';
+            adminFeedback.textContent = '✅ Melding verzonden naar iedereen!';
+          } else {
+            adminFeedback.textContent = '❌ ' + (data.error || 'Mislukt');
+          }
+        } catch (e) {
+          adminFeedback.textContent = '❌ Server niet bereikbaar.';
+        }
+      });
+
+      // ============================================================
+      // SERVER STATUS & SPEL LADEN (THEMA STAAT VAST)
+      // ============================================================
+      async function checkServerHealth(wsUrl) {
+        try {
+          const httpUrl = wsUrl
+            .replace(/^wss:/, 'https:')
+            .replace(/^ws:/, 'http:')
+            .replace(/\/[^/]*$/, '/api/health');
+
+          const res = await fetch(httpUrl);
+          if (res.ok) {
+            const data = await res.json();
+            const ch = '/' + wsUrl.split('/').pop();
+            const online = (data.channels && data.channels[ch]) ? data.channels[ch].online : 0;
+            serverStatus.textContent = '🟢 Online (' + online + ' spelers op dit kanaal)';
+            serverStatus.className = 'status online';
+            return;
+          }
+        } catch (e) {}
+        serverStatus.textContent = '🔴 Custom server niet bereikbaar';
+        serverStatus.className = 'status offline';
+      }
+
+      function loadGame() {
+        const ws = serverSelect.value;
+        const tables = tablesInput.value.trim() || '10';
+
+        localStorage.setItem('eggs_custom_server', ws);
+        localStorage.setItem('eggs_custom_tables', tables);
+
+        checkServerHealth(ws);
+
+        const url = BASE_GAME_URL +
+          '?timestables=' + encodeURIComponent(tables) +
+          '&lang=nl' +
+          '&multiplayer=' + encodeURIComponent(ws) +
+          '&swap=1' +
+          '&theme=' + encodeURIComponent(CONFIG.LOCKED_THEME);
+
+        gameSrc.setAttribute('data', url);
+      }
+
+      document.getElementById('applyBtn').addEventListener('click', function () {
+        loadGame();
+        toggleMenu(true);
+      });
+
+      // Opstarten
+      (async function init() {
+        const savedUser = localStorage.getItem('eggs_google_user');
+        if (savedUser) {
+          try { renderUser(JSON.parse(savedUser)); } catch (e) {}
+        }
+        await refreshMyProfile();
+        initGoogleSignIn();
+        connectSiteEvents();
+        loadGame();
+      })();
+    })();
+  </script>
+</body>
+</html>
