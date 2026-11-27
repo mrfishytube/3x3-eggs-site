@@ -8,11 +8,32 @@ const { WebSocketServer } = require('ws');
 const PORT = process.env.PORT || 3000;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com';
 const ADMIN_EMAIL = 'mr.fish.ytube@gmail.com'.toLowerCase();
+const AUTO_VERIFY_DOMAIN = '@ll.flevion.nl';
 const MAX_PLAYERS_PER_ROOM = 7;
 
-// ============================================================
-// LOKALE DATABASE VOOR GOOGLE ACCOUNTS & ITEMS
-// ============================================================
+function toBig(val) {
+  const cleaned = String(val ?? '0').replace(/[^0-9-]/g, '').trim();
+  if (!cleaned || cleaned === '-') return 0n;
+  try {
+    return BigInt(cleaned);
+  } catch (e) {
+    return 0n;
+  }
+}
+
+function addClampedBig(currentVal, deltaVal) {
+  const sum = toBig(currentVal) + toBig(deltaVal);
+  return (sum < 0n ? 0n : sum).toString();
+}
+
+function formatBig(val) {
+  const str = toBig(val).toString();
+  const neg = str.startsWith('-');
+  const digits = neg ? str.slice(1) : str;
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (neg ? '-' : '') + grouped;
+}
+
 const DB_FILE = path.join(__dirname, 'accounts.json');
 let db = { users: {}, sessions: {} };
 
@@ -30,17 +51,38 @@ function saveDB() {
   fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
+function hashPassword(pw) {
+  return crypto.createHash('sha256').update('eggs_salt_' + pw).digest('hex');
+}
+
+function findUserByEmail(email) {
+  const lower = String(email || '').trim().toLowerCase();
+  return Object.values(db.users).find((u) => (u.email || '').toLowerCase() === lower) || null;
+}
+
+function publicUser(u) {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    picture: u.picture || '',
+    role: (u.email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : (u.role || 'player'),
+    verified: Boolean(u.verified),
+    diamonds: toBig(u.diamonds || '0').toString(),
+    coins: toBig(u.coins || '0').toString(),
+    speed: toBig(u.speed || '0').toString(),
+    items: Array.isArray(u.items) ? u.items : []
+  };
+}
+
 function httpsGetJson(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, data: JSON.parse(body) });
-        } catch (e) {
-          reject(e);
-        }
+        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); }
+        catch (e) { reject(e); }
       });
     }).on('error', reject);
   });
@@ -54,11 +96,8 @@ function readJsonBody(req) {
       if (body.length > 1e6) req.destroy();
     });
     req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (e) {
-        reject(e);
-      }
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (e) { reject(e); }
     });
   });
 }
@@ -82,75 +121,59 @@ function getAuthUser(req) {
 }
 
 function isAdmin(user) {
-  return Boolean(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL);
+  if (!user) return false;
+  return (user.email || '').toLowerCase() === ADMIN_EMAIL || user.role === 'admin';
 }
 
-// ============================================================
-// LIVE SITE-EVENTS (GIFTS & ADMIN MELDINGEN)
-// ============================================================
-const siteEventClients = new Set();
+function createSession(uid) {
+  const token = crypto.randomBytes(24).toString('hex');
+  db.sessions[token] = uid;
+  saveDB();
+  return token;
+}
 
+const siteEventClients = new Set();
 function broadcastSiteEvent(payload) {
   const data = JSON.stringify(payload);
   for (const ws of siteEventClients) {
-    if (ws.readyState === 1) {
-      ws.send(data);
-    }
+    if (ws.readyState === 1) ws.send(data);
   }
 }
 
-// ============================================================
-// CUSTOM MULTIPLAYER KAMERS PER KANAAL (/server1, /server2, /vip)
-// ============================================================
 const channels = new Map();
 
 function generateCode() {
   const words = ['custom', 'ei', 'zon', 'ster', 'wolk', 'bloem', 'vlam'];
-  const word = words[Math.floor(Math.random() * words.length)];
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${word}${num}`;
+  return words[Math.floor(Math.random() * words.length)] + Math.floor(1000 + Math.random() * 9000);
 }
-
-function getChannel(channelName) {
-  if (!channels.has(channelName)) {
-    channels.set(channelName, new Map());
-  }
-  return channels.get(channelName);
+function getChannel(name) {
+  if (!channels.has(name)) channels.set(name, new Map());
+  return channels.get(name);
 }
-
-function findOrCreatePublicRoom(channelName) {
-  const rooms = getChannel(channelName);
-  for (const room of rooms.values()) {
-    if (!room.isPrivate && room.clients.size < MAX_PLAYERS_PER_ROOM) {
-      return room;
-    }
+function findOrCreatePublicRoom(ch) {
+  const rooms = getChannel(ch);
+  for (const r of rooms.values()) {
+    if (!r.isPrivate && r.clients.size < MAX_PLAYERS_PER_ROOM) return r;
   }
   const code = generateCode();
   const room = { code, isPrivate: false, clients: new Map() };
   rooms.set(code, room);
   return room;
 }
-
-function createPrivateRoom(channelName) {
-  const rooms = getChannel(channelName);
+function createPrivateRoom(ch) {
+  const rooms = getChannel(ch);
   const code = generateCode();
   const room = { code, isPrivate: true, clients: new Map() };
   rooms.set(code, room);
   return room;
 }
-
 function broadcastRoom(room, payload, excludeId = null) {
   const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
   for (const [id, client] of room.clients.entries()) {
-    if (id !== excludeId && client.ws.readyState === 1) {
-      client.ws.send(data);
-    }
+    if (id !== excludeId && client.ws.readyState === 1) client.ws.send(data);
   }
 }
 
-// ============================================================
-// HTTP SERVER (Website + Google Auth + Admin API)
-// ============================================================
 const server = http.createServer(async (req, res) => {
   const urlPath = (req.url || '/').split('?')[0];
 
@@ -164,7 +187,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 1. Website serveren
   if (req.method === 'GET' && (urlPath === '/' || urlPath === '/index.html')) {
     const filePath = path.join(__dirname, 'index.html');
     if (fs.existsSync(filePath)) {
@@ -174,7 +196,6 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2. Server status
   if (req.method === 'GET' && urlPath === '/api/health') {
     const stats = {};
     for (const [ch, rooms] of channels.entries()) {
@@ -182,168 +203,266 @@ const server = http.createServer(async (req, res) => {
       for (const r of rooms.values()) online += r.clients.size;
       stats[ch] = { rooms: rooms.size, online };
     }
-    sendJson(res, 200, {
-      ok: true,
-      status: 'Custom 3x3 Eggs Server actief',
-      usersCount: Object.keys(db.users).length,
-      channels: stats
-    });
+    sendJson(res, 200, { ok: true, usersCount: Object.keys(db.users).length, channels: stats });
     return;
   }
 
-  // 3. Account aanmaken / inloggen met Google
+  if (req.method === 'POST' && urlPath === '/api/auth/register') {
+    try {
+      const body = await readJsonBody(req);
+      const email = String(body.email || '').trim().toLowerCase();
+      const password = String(body.password || '');
+      const name = String(body.name || '').trim() || email.split('@')[0];
+
+      if (!email || !email.includes('@')) {
+        sendJson(res, 400, { ok: false, error: 'Vul een geldig e-mailadres in.' });
+        return;
+      }
+      if (password.length < 4) {
+        sendJson(res, 400, { ok: false, error: 'Wachtwoord moet minstens 4 tekens zijn.' });
+        return;
+      }
+      if (findUserByEmail(email)) {
+        sendJson(res, 409, { ok: false, error: 'Dit e-mailadres heeft al een account. Log in!' });
+        return;
+      }
+
+      const isAdminEmail = email === ADMIN_EMAIL;
+      const skipVerify = email.endsWith(AUTO_VERIFY_DOMAIN) || isAdminEmail;
+      const verifyCode = skipVerify ? null : String(Math.floor(100000 + Math.random() * 900000));
+      const uid = 'u_' + crypto.randomBytes(8).toString('hex');
+      const now = new Date().toISOString();
+
+      db.users[uid] = {
+        id: uid,
+        name,
+        email,
+        passwordHash: hashPassword(password),
+        picture: '',
+        role: isAdminEmail ? 'admin' : 'player',
+        verified: skipVerify,
+        verifyCode,
+        diamonds: '0',
+        coins: '0',
+        speed: '0',
+        items: [],
+        createdAt: now,
+        lastLogin: now
+      };
+      saveDB();
+
+      if (skipVerify) {
+        const token = createSession(uid);
+        sendJson(res, 200, { ok: true, token, user: publicUser(db.users[uid]) });
+      } else {
+        console.log(`[VERIFY] Code voor ${email}: ${verifyCode}`);
+        sendJson(res, 200, {
+          ok: true,
+          needsVerification: true,
+          message: `Verificatiecode voor ${email}: ${verifyCode} (voor @ll.flevion.nl is geen code nodig)`
+        });
+      }
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: 'Serverfout bij registreren.' });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && urlPath === '/api/auth/verify') {
+    try {
+      const body = await readJsonBody(req);
+      const user = findUserByEmail(body.email);
+      if (!user) {
+        sendJson(res, 404, { ok: false, error: 'Account niet gevonden.' });
+        return;
+      }
+      if (String(body.code || '').trim() !== String(user.verifyCode)) {
+        sendJson(res, 400, { ok: false, error: 'Verificatiecode klopt niet.' });
+        return;
+      }
+      user.verified = true;
+      user.verifyCode = null;
+      saveDB();
+      const token = createSession(user.id);
+      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: 'Serverfout bij verifiëren.' });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && urlPath === '/api/auth/login') {
+    try {
+      const body = await readJsonBody(req);
+      const email = String(body.email || '').trim().toLowerCase();
+      const password = String(body.password || '');
+      const user = findUserByEmail(email);
+
+      if (!user || user.passwordHash !== hashPassword(password)) {
+        sendJson(res, 401, { ok: false, error: 'Onjuist e-mailadres of wachtwoord.' });
+        return;
+      }
+      if (!user.verified && !email.endsWith(AUTO_VERIFY_DOMAIN) && email !== ADMIN_EMAIL) {
+        sendJson(res, 403, {
+          ok: false,
+          needsVerification: true,
+          message: `Account nog niet geverifieerd. Code: ${user.verifyCode}`
+        });
+        return;
+      }
+      user.lastLogin = new Date().toISOString();
+      if (email === ADMIN_EMAIL) user.role = 'admin';
+      saveDB();
+
+      const token = createSession(user.id);
+      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+    } catch (err) {
+      sendJson(res, 500, { ok: false, error: 'Serverfout bij inloggen.' });
+    }
+    return;
+  }
+
   if (req.method === 'POST' && urlPath === '/api/auth/google') {
     try {
       const body = await readJsonBody(req);
-      const credential = body.credential;
-      if (!credential) {
-        sendJson(res, 400, { ok: false, error: 'Geen Google token ontvangen' });
+      if (!body.credential) {
+        sendJson(res, 400, { ok: false, error: 'Geen Google token ontvangen.' });
         return;
       }
-
-      const verifyUrl = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential);
-      const verifyRes = await httpsGetJson(verifyUrl);
-
+      const verifyRes = await httpsGetJson('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(body.credential));
       if (verifyRes.status !== 200 || !verifyRes.data || !verifyRes.data.sub) {
-        sendJson(res, 401, { ok: false, error: 'Ongeldig Google token' });
+        sendJson(res, 401, { ok: false, error: 'Ongeldig Google token.' });
         return;
       }
-
       const payload = verifyRes.data;
       if (GOOGLE_CLIENT_ID && payload.aud !== GOOGLE_CLIENT_ID) {
-        sendJson(res, 401, { ok: false, error: 'Google Client ID komt niet overeen' });
+        sendJson(res, 401, { ok: false, error: 'Google Client ID komt niet overeen.' });
         return;
       }
 
-      const uid = payload.sub;
       const email = (payload.email || '').toLowerCase();
+      let user = findUserByEmail(email) || db.users[payload.sub];
       const now = new Date().toISOString();
-      const adminFlag = email === ADMIN_EMAIL;
 
-      if (!db.users[uid]) {
-        db.users[uid] = {
-          id: uid,
+      if (!user) {
+        user = {
+          id: payload.sub,
           name: payload.name || 'Speler',
           email: payload.email || '',
           picture: payload.picture || '',
-          role: adminFlag ? 'admin' : 'player',
-          diamonds: 0,
-          coins: 0,
-          speed: 0,
+          role: email === ADMIN_EMAIL ? 'admin' : 'player',
+          verified: true,
+          diamonds: '0',
+          coins: '0',
+          speed: '0',
           items: [],
           createdAt: now,
           lastLogin: now
         };
+        db.users[user.id] = user;
       } else {
-        db.users[uid].name = payload.name || db.users[uid].name;
-        db.users[uid].picture = payload.picture || db.users[uid].picture;
-        db.users[uid].email = payload.email || db.users[uid].email;
-        if (adminFlag) db.users[uid].role = 'admin';
-        if (typeof db.users[uid].diamonds !== 'number') db.users[uid].diamonds = 0;
-        if (typeof db.users[uid].coins !== 'number') db.users[uid].coins = 0;
-        if (typeof db.users[uid].speed !== 'number') db.users[uid].speed = 0;
-        if (!Array.isArray(db.users[uid].items)) db.users[uid].items = [];
-        db.users[uid].lastLogin = now;
+        user.name = payload.name || user.name;
+        user.picture = payload.picture || user.picture;
+        user.verified = true;
+        if (email === ADMIN_EMAIL) user.role = 'admin';
+        user.lastLogin = now;
       }
-
-      const sessionToken = crypto.randomBytes(24).toString('hex');
-      db.sessions[sessionToken] = uid;
       saveDB();
 
-      sendJson(res, 200, {
-        ok: true,
-        token: sessionToken,
-        user: db.users[uid],
-        isAdmin: adminFlag
-      });
+      const token = createSession(user.id);
+      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
     } catch (err) {
-      console.error('Google Auth fout:', err);
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij Google login' });
+      sendJson(res, 500, { ok: false, error: 'Serverfout bij Google login.' });
     }
     return;
   }
 
-  // 4. Huidige gebruiker ophalen
   if (req.method === 'GET' && urlPath === '/api/me') {
     const user = getAuthUser(req);
     if (!user) {
-      sendJson(res, 401, { ok: false, error: 'Niet ingelogd' });
+      sendJson(res, 401, { ok: false, error: 'Niet ingelogd.' });
       return;
     }
-    sendJson(res, 200, { ok: true, user, isAdmin: isAdmin(user) });
+    sendJson(res, 200, { ok: true, user: publicUser(user) });
     return;
   }
 
-  // 5. ADMIN: Alle spelers ophalen (alleen voor mr.fish.ytube@gmail.com)
+  if (req.method === 'POST' && urlPath === '/api/treadmill/tick') {
+    const user = getAuthUser(req);
+    if (!user) {
+      sendJson(res, 401, { ok: false, error: 'Niet ingelogd.' });
+      return;
+    }
+    const allowed = isAdmin(user) || (Array.isArray(user.items) && user.items.includes('🏃 Admin Treadmill'));
+    if (!allowed) {
+      sendJson(res, 403, { ok: false, error: 'Geen toegang tot Admin Treadmill.' });
+      return;
+    }
+    const body = await readJsonBody(req);
+    const pBig = toBig(body.power || '100');
+    const clampedPower = pBig > 1000000000n ? 1000000000n : (pBig < 10n ? 10n : pBig);
+    user.speed = addClampedBig(user.speed, clampedPower);
+    user.coins = addClampedBig(user.coins, clampedPower * 2n);
+    saveDB();
+    sendJson(res, 200, { ok: true, user: publicUser(user) });
+    return;
+  }
+
   if (req.method === 'GET' && urlPath === '/api/admin/users') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten' });
+      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
-    const users = Object.values(db.users).map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      diamonds: u.diamonds || 0,
-      coins: u.coins || 0,
-      speed: u.speed || 0,
-      items: u.items || []
-    }));
-    sendJson(res, 200, { ok: true, users });
+    sendJson(res, 200, { ok: true, users: Object.values(db.users).map(publicUser) });
     return;
   }
 
-  // 6. ADMIN: Spullen, valuta of rang geven aan jezelf of anderen
   if (req.method === 'POST' && urlPath === '/api/admin/give') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten' });
+      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
-
     try {
       const body = await readJsonBody(req);
-      const { targetId, diamonds = 0, coins = 0, speed = 0, role = '', item = '' } = body;
-
-      const dAmt = parseInt(diamonds, 10) || 0;
-      const cAmt = parseInt(coins, 10) || 0;
-      const sAmt = parseInt(speed, 10) || 0;
+      const { targetId, diamonds = '0', coins = '0', speed = '0', role = '', item = '' } = body;
+      const dBig = toBig(diamonds);
+      const cBig = toBig(coins);
+      const sBig = toBig(speed);
       const cleanItem = typeof item === 'string' ? item.trim().slice(0, 60) : '';
-      const validRoles = ['player', 'vip', 'mod', 'admin'];
-      const cleanRole = validRoles.includes(role) ? role : '';
+      const cleanRole = ['player', 'vip', 'mod', 'admin'].includes(role) ? role : '';
 
       const targets = targetId === 'ALL'
         ? Object.values(db.users)
         : (db.users[targetId] ? [db.users[targetId]] : []);
 
       if (targets.length === 0) {
-        sendJson(res, 404, { ok: false, error: 'Speler niet gevonden' });
+        sendJson(res, 404, { ok: false, error: 'Speler niet gevonden.' });
         return;
       }
 
       const parts = [];
-      if (dAmt) parts.push(`${dAmt > 0 ? '+' : ''}${dAmt} 💎`);
-      if (cAmt) parts.push(`${cAmt > 0 ? '+' : ''}${cAmt} 🪙`);
-      if (sAmt) parts.push(`${sAmt > 0 ? '+' : ''}${sAmt} ⚡`);
+      if (dBig !== 0n) parts.push(`${dBig > 0n ? '+' : ''}${formatBig(dBig)} 💎`);
+      if (cBig !== 0n) parts.push(`${cBig > 0n ? '+' : ''}${formatBig(cBig)} 🪙`);
+      if (sBig !== 0n) parts.push(`${sBig > 0n ? '+' : ''}${formatBig(sBig)} ⚡`);
       if (cleanItem) parts.push(cleanItem);
       if (cleanRole) parts.push(`Rang: ${cleanRole.toUpperCase()}`);
 
       for (const u of targets) {
-        u.diamonds = Math.max(0, (u.diamonds || 0) + dAmt);
-        u.coins = Math.max(0, (u.coins || 0) + cAmt);
-        u.speed = Math.max(0, (u.speed || 0) + sAmt);
+        u.diamonds = addClampedBig(u.diamonds, dBig);
+        u.coins = addClampedBig(u.coins, cBig);
+        u.speed = addClampedBig(u.speed, sBig);
         if (cleanItem) {
           if (!Array.isArray(u.items)) u.items = [];
-          u.items.push(cleanItem);
+          if (!u.items.includes(cleanItem)) {
+            u.items.push(cleanItem);
+          }
         }
         if (cleanRole) {
-          // Admin-account behoudt altijd admin-rechten
           u.role = (u.email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : cleanRole;
         }
       }
-
       saveDB();
 
       const summary = parts.join(', ') || 'Update';
@@ -356,46 +475,34 @@ const server = http.createServer(async (req, res) => {
 
       sendJson(res, 200, { ok: true, count: targets.length, summary });
     } catch (err) {
-      console.error('Admin give fout:', err);
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij geven' });
+      sendJson(res, 500, { ok: false, error: 'Serverfout bij geven.' });
     }
     return;
   }
 
-  // 7. ADMIN: Live melding sturen naar alle spelers op de site
   if (req.method === 'POST' && urlPath === '/api/admin/announce') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten' });
+      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
-    try {
-      const body = await readJsonBody(req);
-      const text = String(body.text || '').trim().slice(0, 200);
-      if (!text) {
-        sendJson(res, 400, { ok: false, error: 'Bericht is leeg' });
-        return;
-      }
-      broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
-      sendJson(res, 200, { ok: true });
-    } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Fout bij verzenden' });
+    const body = await readJsonBody(req);
+    const text = String(body.text || '').trim().slice(0, 200);
+    if (!text) {
+      sendJson(res, 400, { ok: false, error: 'Bericht is leeg.' });
+      return;
     }
+    broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
+    sendJson(res, 200, { ok: true });
     return;
   }
 
   sendJson(res, 404, { ok: false, error: 'Niet gevonden' });
 });
 
-// ============================================================
-// WEBSOCKET SERVER (/site-events + /server1, /server2, /vip)
-// ============================================================
 const wss = new WebSocketServer({ server });
-
 wss.on('connection', (ws, req) => {
   const channelName = (req.url || '/server1').split('?')[0];
-
-  // Apart kanaal voor live website-meldingen en cadeaus
   if (channelName === '/site-events') {
     siteEventClients.add(ws);
     ws.on('close', () => siteEventClients.delete(ws));
@@ -406,13 +513,10 @@ wss.on('connection', (ws, req) => {
   let currentRoom = findOrCreatePublicRoom(channelName);
   currentRoom.clients.set(playerId, { ws, state: {} });
 
-  console.log(`[${channelName}] + ${playerId} in kamer ${currentRoom.code} (${currentRoom.clients.size}/${MAX_PLAYERS_PER_ROOM})`);
-
   ws.on('message', (raw) => {
     const text = raw.toString();
     let msg = null;
     try { msg = JSON.parse(text); } catch (e) {}
-
     if (msg && (msg.type === 'private' || msg.action === 'private')) {
       currentRoom.clients.delete(playerId);
       currentRoom = createPrivateRoom(channelName);
@@ -420,10 +524,8 @@ wss.on('connection', (ws, req) => {
       ws.send(JSON.stringify({ type: 'room', code: currentRoom.code, private: true }));
       return;
     }
-
     if (msg && (msg.type === 'join' || msg.action === 'join') && msg.code) {
-      const rooms = getChannel(channelName);
-      const target = rooms.get(String(msg.code).toLowerCase());
+      const target = getChannel(channelName).get(String(msg.code).toLowerCase());
       if (target && target.clients.size < MAX_PLAYERS_PER_ROOM) {
         currentRoom.clients.delete(playerId);
         currentRoom = target;
@@ -432,20 +534,15 @@ wss.on('connection', (ws, req) => {
       }
       return;
     }
-
     broadcastRoom(currentRoom, text, playerId);
   });
 
   ws.on('close', () => {
     currentRoom.clients.delete(playerId);
-    console.log(`[${channelName}] - ${playerId} weg uit ${currentRoom.code}`);
-    if (currentRoom.clients.size === 0) {
-      getChannel(channelName).delete(currentRoom.code);
-    }
+    if (currentRoom.clients.size === 0) getChannel(channelName).delete(currentRoom.code);
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Custom 3x3 Eggs server draait op http://localhost:${PORT}`);
-  console.log(`👑 Admin account: ${ADMIN_EMAIL}`);
+  console.log(`🚀 Server draait op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
 });

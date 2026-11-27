@@ -17,13 +17,24 @@
       color: #f8fafc;
     }
 
+    /* Visueel spoor (Trail) achter de muis / speler op de website */
+    #trailCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 950;
+      pointer-events: none;
+    }
+
     #gameSrc {
       width: 100%;
       height: 100%;
       display: block;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Menu Toggle Knop */
     #nav-toggle {
       position: fixed;
       left: 0;
@@ -45,16 +56,15 @@
     }
     #nav-toggle:hover { background: #1d4ed8; }
     #nav-toggle.active {
-      left: 330px;
+      left: 340px;
       background: #ef4444;
     }
 
-    /* Zijmenu */
     #mnu {
       position: fixed;
       top: 0;
-      left: -330px;
-      width: 330px;
+      left: -340px;
+      width: 340px;
       height: 100%;
       background: #1e293b;
       z-index: 1001;
@@ -64,11 +74,7 @@
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
     }
     #mnu.open { left: 0; }
-    #mnu h2 {
-      font-size: 1.25rem;
-      color: #38bdf8;
-      margin-bottom: 14px;
-    }
+    #mnu h2 { font-size: 1.25rem; color: #38bdf8; margin-bottom: 14px; }
     #mnu h3 {
       font-size: 0.78rem;
       text-transform: uppercase;
@@ -84,7 +90,6 @@
       padding: 12px;
       margin-bottom: 10px;
     }
-
     .admin-card {
       background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
       border: 1px solid #f59e0b;
@@ -92,12 +97,36 @@
       padding: 12px;
       margin-bottom: 12px;
     }
-
-    .user-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .treadmill-card {
+      background: linear-gradient(180deg, #064e3b 0%, #0f172a 100%);
+      border: 1px solid #10b981;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      text-align: center;
     }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .tab-btn {
+      padding: 7px;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .user-row { display: flex; align-items: center; gap: 10px; }
     .user-avatar {
       width: 42px;
       height: 42px;
@@ -116,7 +145,7 @@
       flex-wrap: wrap;
     }
     .user-email {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: #94a3b8;
       white-space: nowrap;
       overflow: hidden;
@@ -148,22 +177,10 @@
       padding: 6px;
       text-align: center;
     }
-    .stat-box .val {
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: #38bdf8;
-    }
-    .stat-box .lbl {
-      font-size: 0.68rem;
-      color: #94a3b8;
-    }
+    .stat-box .val { font-weight: 700; font-size: 0.85rem; color: #38bdf8; word-break: break-word; }
+    .stat-box .lbl { font-size: 0.68rem; color: #94a3b8; }
 
-    .items-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
+    .items-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .item-chip {
       background: #1e293b;
       border: 1px solid #475569;
@@ -173,11 +190,23 @@
       color: #fde68a;
     }
 
+    .trail-active-pill {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid #f59e0b;
+      color: #fde68a;
+    }
+
     .google-wrap {
       display: flex;
       justify-content: center;
       margin-top: 8px;
-      min-height: 44px;
+      min-height: 40px;
     }
 
     .status {
@@ -192,10 +221,10 @@
     .status.online { border-color: #10b981; color: #6ee7b7; }
     .status.offline { border-color: #ef4444; color: #fca5a5; }
 
-    .field { margin-bottom: 10px; }
+    .field { margin-bottom: 9px; text-align: left; }
     .field label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #cbd5e1;
       margin-bottom: 4px;
     }
@@ -206,31 +235,29 @@
       border: 1px solid #334155;
       background: #0f172a;
       color: #fff;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
     }
     .field input:focus, .field select:focus {
       outline: none;
       border-color: #38bdf8;
     }
 
-    .row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
     .btn {
       width: 100%;
       padding: 9px 12px;
       border-radius: 6px;
       font-weight: 600;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       cursor: pointer;
       margin-top: 6px;
       transition: background 0.15s;
     }
     .btn-primary { background: #2563eb; color: #fff; }
     .btn-primary:hover { background: #1d4ed8; }
+    .btn-success { background: #10b981; color: #0f172a; }
+    .btn-success:hover { background: #059669; color: #fff; }
     .btn-gold { background: #f59e0b; color: #0f172a; }
     .btn-gold:hover { background: #d97706; }
     .btn-danger { background: #dc2626; color: #fff; }
@@ -238,11 +265,36 @@
     .btn-secondary { background: #334155; color: #fff; }
     .btn-secondary:hover { background: #475569; }
 
-    .admin-feedback {
+    .feedback {
       margin-top: 8px;
       font-size: 0.78rem;
       min-height: 16px;
       color: #6ee7b7;
+      text-align: left;
+      word-break: break-word;
+    }
+    .feedback.err { color: #fca5a5; }
+
+    .treadmill-belt {
+      height: 16px;
+      border-radius: 8px;
+      background: repeating-linear-gradient(
+        90deg,
+        #1e293b 0px,
+        #1e293b 14px,
+        #10b981 14px,
+        #10b981 28px
+      );
+      background-size: 56px 100%;
+      margin: 10px 0;
+      border: 1px solid #34d399;
+    }
+    .treadmill-belt.running {
+      animation: beltMove 0.35s linear infinite;
+    }
+    @keyframes beltMove {
+      from { background-position: 0 0; }
+      to { background-position: -56px 0; }
     }
 
     #darkScreen {
@@ -254,7 +306,6 @@
     }
     #darkScreen.visible { display: block; }
 
-    /* Live Gift / Admin Toast */
     #toastContainer {
       position: fixed;
       top: 16px;
@@ -263,29 +314,26 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-width: 320px;
+      max-width: 340px;
       pointer-events: none;
     }
     .toast {
-      background: rgba(15, 23, 42, 0.95);
+      background: rgba(15, 23, 42, 0.96);
       border: 1px solid #f59e0b;
       color: #fff;
       padding: 12px 14px;
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       line-height: 1.35;
-      animation: slideIn 0.25s ease;
+      word-break: break-word;
     }
     .toast strong { color: #fbbf24; }
-    @keyframes slideIn {
-      from { transform: translateX(30px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
   </style>
 </head>
 <body>
 
+  <canvas id="trailCanvas"></canvas>
   <button id="nav-toggle" aria-label="Menu">☰</button>
   <div id="darkScreen"></div>
   <div id="toastContainer"></div>
@@ -293,11 +341,44 @@
   <nav id="mnu">
     <h2>🥚 3x3 Eggs</h2>
 
-    <h3>Google Account</h3>
+    <h3>Account</h3>
     <div class="card">
       <div id="loggedOutBox">
-        <div style="font-size: 0.84rem; color: #cbd5e1; margin-bottom: 6px;">
-          Maak een account of log in met Google:
+        <div class="tabs">
+          <button type="button" class="tab-btn active" id="tabLogin">Inloggen</button>
+          <button type="button" class="tab-btn" id="tabRegister">Account maken</button>
+        </div>
+
+        <form id="authForm">
+          <div class="field" id="nameField" style="display:none;">
+            <label for="authName">Spelersnaam</label>
+            <input type="text" id="authName" placeholder="Bijv. MrFish">
+          </div>
+          <div class="field">
+            <label for="authEmail">E-mailadres</label>
+            <input type="email" id="authEmail" placeholder="naam@ll.flevion.nl" required>
+          </div>
+          <div class="field">
+            <label for="authPassword">Wachtwoord</label>
+            <input type="password" id="authPassword" placeholder="Min. 4 tekens" required>
+          </div>
+          <button type="submit" class="btn btn-primary" id="authSubmitBtn">Inloggen</button>
+        </form>
+
+        <div id="verifyBox" style="display:none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #334155;">
+          <div style="font-size: 0.78rem; color: #fde68a; margin-bottom: 6px;">
+            Vul de verificatiecode in voor je e-mailadres:
+          </div>
+          <div class="field">
+            <input type="text" id="verifyCodeInput" placeholder="6-cijferige code">
+          </div>
+          <button type="button" class="btn btn-success" id="verifySubmitBtn">Verifieer account</button>
+        </div>
+
+        <div id="authFeedback" class="feedback"></div>
+
+        <div style="text-align:center; font-size:0.75rem; color:#64748b; margin: 10px 0 4px;">
+          — of met Google —
         </div>
         <div id="googleBtnContainer" class="google-wrap"></div>
       </div>
@@ -308,7 +389,7 @@
           <div class="user-meta">
             <div class="user-name">
               <span id="userName"></span>
-              <span id="userRoleBadge" class="role-badge role-player">Speler</span>
+              <span id="userRoleBadge" class="role-badge role-player">SPELER</span>
             </div>
             <div id="userEmail" class="user-email"></div>
           </div>
@@ -329,8 +410,10 @@
           </div>
         </div>
 
+        <div id="activeTrailBadge" class="trail-active-pill" style="display:none;"></div>
+
         <div id="userItemsWrap" style="display:none; margin-top: 8px;">
-          <div style="font-size: 0.72rem; color: #94a3b8;">Jouw items:</div>
+          <div style="font-size: 0.72rem; color: #94a3b8;">Jouw items &amp; trails:</div>
           <div id="userItemsList" class="items-list"></div>
         </div>
 
@@ -338,14 +421,48 @@
       </div>
     </div>
 
-    <!-- ADMIN PANEL: Alleen zichtbaar voor mr.fish.ytube@gmail.com -->
+    <!-- TRAIL KIEZER (Verschijnt zodra je Admin Trail of Speed Trail hebt) -->
+    <div id="trailSelectorSection" style="display:none;">
+      <h3 style="color:#fbbf24;">✨ Trails</h3>
+      <div class="card">
+        <div class="field">
+          <label for="activeTrailSelect">Actieve Trail</label>
+          <select id="activeTrailSelect">
+            <option value="none">Geen trail</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN TREADMILL -->
+    <div id="treadmillSection" style="display:none;">
+      <h3 style="color:#34d399;">🏃 Admin Treadmill</h3>
+      <div class="treadmill-card">
+        <div style="font-size:0.82rem; color:#a7f3d0;">
+          Admin Loopband — train razendsnel Snelheid &amp; Munten!
+        </div>
+        <div id="treadmillBelt" class="treadmill-belt"></div>
+        <div class="field">
+          <label for="treadmillPower">Loopband Snelheid</label>
+          <select id="treadmillPower">
+            <option value="100">⚡ Normaal (+100/sec)</option>
+            <option value="1000">🔥 Turbo (+1.000/sec)</option>
+            <option value="10000">👑 Admin Ultra (+10.000/sec)</option>
+            <option value="100000">🚀 God Speed (+100.000/sec)</option>
+          </select>
+        </div>
+        <button class="btn btn-success" id="treadmillToggleBtn">▶ Start Admin Treadmill</button>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
     <div id="adminSection" style="display:none;">
       <h3 style="color:#fbbf24;">👑 Admin Panel</h3>
       <div class="admin-card">
         <div class="field">
           <label for="adminTarget">Ontvanger kiezen</label>
           <select id="adminTarget">
-            <option value="SELF">Mezelf (mr.fish.ytube@gmail.com)</option>
+            <option value="SELF">👑 Mezelf</option>
             <option value="ALL">🌍 Iedereen (alle accounts)</option>
           </select>
         </div>
@@ -353,18 +470,18 @@
         <div class="row-2">
           <div class="field">
             <label for="giveDiamonds">💎 Diamanten</label>
-            <input type="number" id="giveDiamonds" value="0" placeholder="bijv. 1000">
+            <input type="text" inputmode="numeric" id="giveDiamonds" value="0" placeholder="bijv. 100000000000">
           </div>
           <div class="field">
             <label for="giveCoins">🪙 Munten</label>
-            <input type="number" id="giveCoins" value="0" placeholder="bijv. 50000">
+            <input type="text" inputmode="numeric" id="giveCoins" value="0" placeholder="bijv. 100000000000">
           </div>
         </div>
 
         <div class="row-2">
           <div class="field">
             <label for="giveSpeed">⚡ Snelheid</label>
-            <input type="number" id="giveSpeed" value="0" placeholder="bijv. 500">
+            <input type="text" inputmode="numeric" id="giveSpeed" value="0" placeholder="bijv. 1000000">
           </div>
           <div class="field">
             <label for="giveRole">🏷️ Rang</label>
@@ -379,15 +496,15 @@
         </div>
 
         <div class="field">
-          <label for="givePresetItem">🎁 Item / Ei geven</label>
+          <label for="givePresetItem">🎁 Item / Trail / Ei geven</label>
           <select id="givePresetItem">
-            <option value="">-- Kies een item (optioneel) --</option>
+            <option value="">-- Kies een item of trail --</option>
+            <option value="👑 Admin Trail">👑 Admin Trail</option>
+            <option value="⚡ Speed Trail">⚡ Speed Trail</option>
+            <option value="🏃 Admin Treadmill">🏃 Admin Treadmill</option>
             <option value="🥚 Gouden Ei">🥚 Gouden Ei</option>
             <option value="🐉 Regenboog Draak">🐉 Regenboog Draak</option>
             <option value="👑 VIP Kroon">👑 VIP Kroon</option>
-            <option value="⚡ Ultra Speed Boost">⚡ Ultra Speed Boost</option>
-            <option value="🛡️ Admin Schild">🛡️ Admin Schild</option>
-            <option value="❄️ Winter Legende">❄️ Winter Legende</option>
           </select>
         </div>
 
@@ -407,7 +524,7 @@
         </div>
         <button class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
 
-        <div id="adminFeedback" class="admin-feedback"></div>
+        <div id="adminFeedback" class="feedback"></div>
       </div>
     </div>
 
@@ -440,31 +557,43 @@
 
   <script>
     (function () {
-      // ============================================================
-      // CONFIGURATIE
-      // ============================================================
       const CONFIG = {
         GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
         ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
-
-        // Laat leeg als index.html op dezelfde server draait als server.js
-        API_BASE_URL: '',
-
-        // Vast thema (niet door gebruikers te wijzigen)
-        LOCKED_THEME: 'winter',
-
-        // Jouw eigen custom WebSocket servers (pas na upload jouw domein aan)
-        SERVERS: [
-          { label: 'NL Custom Server 1', url: 'wss://jouw-server.onrender.com/server1' },
-          { label: 'NL Custom Server 2', url: 'wss://jouw-server.onrender.com/server2' },
-          { label: 'Vrienden / VIP Server', url: 'wss://jouw-server.onrender.com/vip' },
-          { label: 'Lokaal testen (localhost:3000)', url: 'ws://localhost:3000/server1' }
-        ]
+        LOCKED_THEME: 'winter'
       };
 
       const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
 
-      // DOM elementen
+      const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
+        ? window.location.origin
+        : 'http://localhost:3000';
+      const WS_BASE = API_BASE.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+
+      const SERVERS = [
+        { label: 'NL Custom Server 1', url: WS_BASE + '/server1' },
+        { label: 'NL Custom Server 2', url: WS_BASE + '/server2' },
+        { label: 'Vrienden / VIP Server', url: WS_BASE + '/vip' }
+      ];
+
+      function parseBigAmount(raw) {
+        const cleaned = String(raw ?? '').replace(/[^0-9-]/g, '').trim();
+        if (!cleaned || cleaned === '-') return '0';
+        try {
+          return BigInt(cleaned).toString();
+        } catch (e) {
+          return '0';
+        }
+      }
+
+      function formatBigNumber(val) {
+        const str = parseBigAmount(val);
+        const neg = str.startsWith('-');
+        const digits = neg ? str.slice(1) : str;
+        const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return (neg ? '-' : '') + grouped;
+      }
+
       const navToggle = document.getElementById('nav-toggle');
       const mnu = document.getElementById('mnu');
       const darkScreen = document.getElementById('darkScreen');
@@ -476,7 +605,16 @@
 
       const loggedOutBox = document.getElementById('loggedOutBox');
       const loggedInBox = document.getElementById('loggedInBox');
+      const tabLogin = document.getElementById('tabLogin');
+      const tabRegister = document.getElementById('tabRegister');
+      const nameField = document.getElementById('nameField');
+      const authForm = document.getElementById('authForm');
+      const authSubmitBtn = document.getElementById('authSubmitBtn');
+      const authFeedback = document.getElementById('authFeedback');
+      const verifyBox = document.getElementById('verifyBox');
+      const verifyCodeInput = document.getElementById('verifyCodeInput');
       const googleBtnContainer = document.getElementById('googleBtnContainer');
+
       const userAvatar = document.getElementById('userAvatar');
       const userName = document.getElementById('userName');
       const userEmail = document.getElementById('userEmail');
@@ -484,27 +622,102 @@
       const statDiamonds = document.getElementById('statDiamonds');
       const statCoins = document.getElementById('statCoins');
       const statSpeed = document.getElementById('statSpeed');
+      const activeTrailBadge = document.getElementById('activeTrailBadge');
       const userItemsWrap = document.getElementById('userItemsWrap');
       const userItemsList = document.getElementById('userItemsList');
       const logoutBtn = document.getElementById('logoutBtn');
+
+      const trailSelectorSection = document.getElementById('trailSelectorSection');
+      const activeTrailSelect = document.getElementById('activeTrailSelect');
 
       const adminSection = document.getElementById('adminSection');
       const adminTarget = document.getElementById('adminTarget');
       const adminFeedback = document.getElementById('adminFeedback');
 
-      let currentUser = null;
-      let eventWs = null;
+      const treadmillSection = document.getElementById('treadmillSection');
+      const treadmillBelt = document.getElementById('treadmillBelt');
+      const treadmillPower = document.getElementById('treadmillPower');
+      const treadmillToggleBtn = document.getElementById('treadmillToggleBtn');
 
-      function getApiBase() {
-        if (CONFIG.API_BASE_URL) return CONFIG.API_BASE_URL.replace(/\/+$/, '');
-        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-          return window.location.origin;
+      // ============================================================
+      // VISUEEL TRAIL-EFFECT (ADMIN TRAIL & SPEED TRAIL)
+      // ============================================================
+      const trailCanvas = document.getElementById('trailCanvas');
+      const tCtx = trailCanvas.getContext('2d');
+      let particles = [];
+      let selectedTrail = localStorage.getItem('eggs_selected_trail') || 'none';
+
+      function resizeTrailCanvas() {
+        trailCanvas.width = window.innerWidth;
+        trailCanvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeTrailCanvas);
+      resizeTrailCanvas();
+
+      function spawnTrailAt(x, y) {
+        if (!selectedTrail || selectedTrail === 'none') return;
+        const isAdminTrail = selectedTrail === 'admin_trail';
+        const count = isAdminTrail ? 3 : 4;
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: x + (Math.random() - 0.5) * (isAdminTrail ? 14 : 22),
+            y: y + (Math.random() - 0.5) * (isAdminTrail ? 14 : 22),
+            vx: isAdminTrail ? (Math.random() - 0.5) * 1.4 : (Math.random() - 0.5) * 3.5,
+            vy: isAdminTrail ? -1.2 - Math.random() * 1.5 : (Math.random() - 0.5) * 3.5,
+            size: isAdminTrail ? 5 + Math.random() * 4 : 4 + Math.random() * 5,
+            life: 1,
+            decay: isAdminTrail ? 0.022 : 0.03,
+            color: isAdminTrail
+              ? (Math.random() > 0.5 ? '#fbbf24' : '#f59e0b')
+              : (Math.random() > 0.5 ? '#38bdf8' : '#34d399'),
+            symbol: isAdminTrail ? '👑' : '⚡'
+          });
         }
-        return 'http://localhost:3000';
       }
 
-      function getToken() {
-        return localStorage.getItem('eggs_session_token') || '';
+      window.addEventListener('mousemove', function (e) {
+        spawnTrailAt(e.clientX, e.clientY);
+      });
+      window.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches[0]) {
+          spawnTrailAt(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      function animateTrails() {
+        tCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life -= p.decay;
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+          tCtx.save();
+          tCtx.globalAlpha = Math.max(0, p.life);
+          tCtx.font = Math.round(p.size * 2.4) + 'px sans-serif';
+          tCtx.fillStyle = p.color;
+          tCtx.fillText(p.symbol, p.x, p.y);
+          tCtx.restore();
+        }
+        requestAnimationFrame(animateTrails);
+      }
+      animateTrails();
+
+      let currentUser = null;
+      let authMode = 'login';
+      let pendingVerifyEmail = '';
+      let eventWs = null;
+      let treadmillInterval = null;
+
+      function getToken() { return localStorage.getItem('eggs_session_token') || ''; }
+
+      function escapeHtml(str) {
+        return String(str || '').replace(/[&<>"']/g, function (m) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+        });
       }
 
       function showToast(title, body) {
@@ -515,32 +728,23 @@
         setTimeout(function () { el.remove(); }, 6000);
       }
 
-      function escapeHtml(str) {
-        return String(str || '').replace(/[&<>"']/g, function (m) {
-          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-        });
+      function setFeedback(el, text, isErr) {
+        el.textContent = text;
+        el.className = isErr ? 'feedback err' : 'feedback';
       }
 
-      // Vul de server-lijst
-      CONFIG.SERVERS.forEach(function (srv) {
+      SERVERS.forEach(function (srv) {
         const opt = document.createElement('option');
         opt.value = srv.url;
         opt.textContent = srv.label;
         serverSelect.appendChild(opt);
       });
-
       const savedServer = localStorage.getItem('eggs_custom_server');
       if (savedServer && Array.from(serverSelect.options).some(o => o.value === savedServer)) {
         serverSelect.value = savedServer;
-      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        serverSelect.value = 'ws://localhost:3000/server1';
       }
-
       tablesInput.value = localStorage.getItem('eggs_custom_tables') || '10';
 
-      // ============================================================
-      // MENU & FULLSCREEN
-      // ============================================================
       function toggleMenu(forceClose) {
         const open = forceClose ? false : !mnu.classList.contains('open');
         mnu.classList.toggle('open', open);
@@ -548,37 +752,25 @@
         darkScreen.classList.toggle('visible', open);
         navToggle.textContent = open ? '✕' : '☰';
       }
-
-      navToggle.addEventListener('click', function () { toggleMenu(); });
-      darkScreen.addEventListener('click', function () { toggleMenu(true); });
-
-      document.getElementById('fsBtn').addEventListener('click', function () {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(function () {});
-        } else {
-          document.exitFullscreen().catch(function () {});
-        }
+      navToggle.addEventListener('click', () => toggleMenu());
+      darkScreen.addEventListener('click', () => toggleMenu(true));
+      document.getElementById('fsBtn').addEventListener('click', () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen().catch(() => {});
         toggleMenu(true);
       });
 
-      // ============================================================
-      // LIVE NOTIFICATIES (GIFT & ADMIN MELDINGEN)
-      // ============================================================
       function connectSiteEvents() {
         try {
           if (eventWs) eventWs.close();
-          const wsBase = getApiBase().replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
-          eventWs = new WebSocket(wsBase + '/site-events');
-
+          eventWs = new WebSocket(WS_BASE + '/site-events');
           eventWs.onmessage = function (ev) {
             let msg = null;
             try { msg = JSON.parse(ev.data); } catch (e) { return; }
-
             if (msg.type === 'announcement') {
               showToast('📢 Admin Bericht', msg.text);
             } else if (msg.type === 'gift') {
-              const isForMe = currentUser && (msg.targetId === 'ALL' || msg.targetId === currentUser.id);
-              if (isForMe) {
+              if (currentUser && (msg.targetId === 'ALL' || msg.targetId === currentUser.id)) {
                 showToast('🎁 Je hebt iets gekregen!', msg.summary);
                 refreshMyProfile();
               }
@@ -587,52 +779,253 @@
         } catch (e) {}
       }
 
-      // ============================================================
-      // GOOGLE ACCOUNT & PROFIEL
-      // ============================================================
-      function decodeJwtPayload(token) {
+      function setAuthMode(mode) {
+        authMode = mode;
+        tabLogin.classList.toggle('active', mode === 'login');
+        tabRegister.classList.toggle('active', mode === 'register');
+        nameField.style.display = mode === 'register' ? 'block' : 'none';
+        authSubmitBtn.textContent = mode === 'register' ? 'Account aanmaken' : 'Inloggen';
+        verifyBox.style.display = 'none';
+        setFeedback(authFeedback, '', false);
+      }
+      tabLogin.addEventListener('click', () => setAuthMode('login'));
+      tabRegister.addEventListener('click', () => setAuthMode('register'));
+
+      authForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const name = document.getElementById('authName').value.trim();
+
+        const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
         try {
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(
-            atob(base64).split('').map(function (c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join('')
-          );
-          return JSON.parse(jsonPayload);
+          const res = await fetch(API_BASE + endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            if (data.needsVerification) {
+              pendingVerifyEmail = email;
+              verifyBox.style.display = 'block';
+              setFeedback(authFeedback, data.message || 'Verifieer eerst je e-mail.', true);
+            } else {
+              setFeedback(authFeedback, data.error || 'Inloggen mislukt', true);
+            }
+            return;
+          }
+
+          if (data.needsVerification) {
+            pendingVerifyEmail = email;
+            verifyBox.style.display = 'block';
+            setFeedback(authFeedback, data.message, false);
+            return;
+          }
+
+          localStorage.setItem('eggs_session_token', data.token);
+          localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+          renderUser(data.user);
+          showToast('✅ Ingelogd', 'Welkom ' + data.user.name + '!');
+        } catch (err) {
+          setFeedback(authFeedback, 'Server niet bereikbaar.', true);
+        }
+      });
+
+      document.getElementById('verifySubmitBtn').addEventListener('click', async function () {
+        const code = verifyCodeInput.value.trim();
+        if (!code || !pendingVerifyEmail) return;
+        try {
+          const res = await fetch(API_BASE + '/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingVerifyEmail, code })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            setFeedback(authFeedback, data.error || 'Code klopt niet', true);
+            return;
+          }
+          localStorage.setItem('eggs_session_token', data.token);
+          localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+          verifyBox.style.display = 'none';
+          renderUser(data.user);
+          showToast('✅ Geverifieerd', 'Welkom ' + data.user.name + '!');
         } catch (e) {
-          return null;
+          setFeedback(authFeedback, 'Server niet bereikbaar.', true);
+        }
+      });
+
+      async function handleGoogleCredential(response) {
+        if (!response || !response.credential) return;
+        try {
+          const res = await fetch(API_BASE + '/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential })
+          });
+          const data = await res.json();
+          if (res.ok && data.ok && data.user) {
+            localStorage.setItem('eggs_session_token', data.token);
+            localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+            renderUser(data.user);
+            showToast('✅ Ingelogd met Google', 'Welkom ' + data.user.name + '!');
+          } else {
+            setFeedback(authFeedback, data.error || 'Google login mislukt', true);
+          }
+        } catch (e) {
+          setFeedback(authFeedback, 'Server niet bereikbaar.', true);
+        }
+      }
+
+      function initGoogleSignIn() {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          window.google.accounts.id.initialize({
+            client_id: CONFIG.GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredential
+          });
+          googleBtnContainer.innerHTML = '';
+          window.google.accounts.id.renderButton(googleBtnContainer, {
+            theme: 'filled_blue',
+            size: 'medium',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 240,
+            locale: 'nl'
+          });
+        } else {
+          setTimeout(initGoogleSignIn, 350);
         }
       }
 
       function isAdminUser(user) {
-        if (!user || !user.email) return false;
-        return user.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase();
+        if (!user) return false;
+        const byEmail = user.email && user.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase();
+        const byRole = user.role === 'admin';
+        return byEmail || byRole;
       }
+
+      function hasTreadmillAccess(user) {
+        if (!user) return false;
+        if (isAdminUser(user)) return true;
+        return Array.isArray(user.items) && user.items.includes('🏃 Admin Treadmill');
+      }
+
+      function updateTrailUI(user) {
+        const items = (user && Array.isArray(user.items)) ? user.items : [];
+        const hasAdminTrail = isAdminUser(user) || items.includes('👑 Admin Trail');
+        const hasSpeedTrail = isAdminUser(user) || items.includes('⚡ Speed Trail');
+
+        if (!user || (!hasAdminTrail && !hasSpeedTrail)) {
+          trailSelectorSection.style.display = 'none';
+          activeTrailBadge.style.display = 'none';
+          selectedTrail = 'none';
+          return;
+        }
+
+        trailSelectorSection.style.display = 'block';
+        activeTrailSelect.innerHTML = '<option value="none">Geen trail</option>';
+        if (hasAdminTrail) {
+          activeTrailSelect.innerHTML += '<option value="admin_trail">👑 Admin Trail (Goud)</option>';
+        }
+        if (hasSpeedTrail) {
+          activeTrailSelect.innerHTML += '<option value="speed_trail">⚡ Speed Trail (Turbo)</option>';
+        }
+
+        if (selectedTrail === 'admin_trail' && !hasAdminTrail) selectedTrail = 'none';
+        if (selectedTrail === 'speed_trail' && !hasSpeedTrail) selectedTrail = 'none';
+        if (selectedTrail === 'none' && hasAdminTrail) selectedTrail = 'admin_trail';
+        else if (selectedTrail === 'none' && hasSpeedTrail) selectedTrail = 'speed_trail';
+
+        activeTrailSelect.value = selectedTrail;
+        localStorage.setItem('eggs_selected_trail', selectedTrail);
+
+        if (selectedTrail === 'admin_trail') {
+          activeTrailBadge.textContent = '✨ Actief: 👑 Admin Trail';
+          activeTrailBadge.style.display = 'inline-block';
+        } else if (selectedTrail === 'speed_trail') {
+          activeTrailBadge.textContent = '✨ Actief: ⚡ Speed Trail';
+          activeTrailBadge.style.display = 'inline-block';
+        } else {
+          activeTrailBadge.style.display = 'none';
+        }
+      }
+
+      activeTrailSelect.addEventListener('change', function () {
+        selectedTrail = activeTrailSelect.value;
+        localStorage.setItem('eggs_selected_trail', selectedTrail);
+        updateTrailUI(currentUser);
+      });
+
+      function stopTreadmill() {
+        if (treadmillInterval) {
+          clearInterval(treadmillInterval);
+          treadmillInterval = null;
+        }
+        treadmillBelt.classList.remove('running');
+        treadmillToggleBtn.textContent = '▶ Start Admin Treadmill';
+        treadmillToggleBtn.className = 'btn btn-success';
+      }
+
+      treadmillToggleBtn.addEventListener('click', function () {
+        if (treadmillInterval) {
+          stopTreadmill();
+          return;
+        }
+        treadmillBelt.classList.add('running');
+        treadmillToggleBtn.textContent = '⏹ Stop Admin Treadmill';
+        treadmillToggleBtn.className = 'btn btn-danger';
+
+        treadmillInterval = setInterval(async function () {
+          const power = parseBigAmount(treadmillPower.value || '100');
+          const token = getToken();
+          if (!token) return;
+          try {
+            const res = await fetch(API_BASE + '/api/treadmill/tick', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+              },
+              body: JSON.stringify({ power })
+            });
+            const data = await res.json();
+            if (res.ok && data.ok && data.user) {
+              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+              renderUser(data.user);
+            }
+          } catch (e) {}
+        }, 1000);
+      });
 
       function renderUser(user) {
         currentUser = user;
         if (!user) {
+          stopTreadmill();
+          updateTrailUI(null);
           loggedOutBox.style.display = 'block';
           loggedInBox.style.display = 'none';
           adminSection.style.display = 'none';
+          treadmillSection.style.display = 'none';
           return;
         }
 
         loggedOutBox.style.display = 'none';
         loggedInBox.style.display = 'block';
 
-        userName.textContent = user.name || 'Google Gebruiker';
+        userName.textContent = user.name || 'Speler';
         userEmail.textContent = user.email || '';
-        userAvatar.src = user.picture || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><rect width="42" height="42" fill="%232563eb"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif">G</text></svg>';
+        const letter = (user.name || 'S').charAt(0).toUpperCase();
+        userAvatar.src = user.picture || ('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42"><rect width="42" height="42" fill="%232563eb"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif">' + encodeURIComponent(letter) + '</text></svg>');
 
         const role = isAdminUser(user) ? 'admin' : (user.role || 'player');
         userRoleBadge.textContent = role.toUpperCase();
         userRoleBadge.className = 'role-badge role-' + role;
 
-        statDiamonds.textContent = Number(user.diamonds || 0).toLocaleString('nl-NL');
-        statCoins.textContent = Number(user.coins || 0).toLocaleString('nl-NL');
-        statSpeed.textContent = Number(user.speed || 0).toLocaleString('nl-NL');
+        statDiamonds.textContent = formatBigNumber(user.diamonds || '0');
+        statCoins.textContent = formatBigNumber(user.coins || '0');
+        statSpeed.textContent = formatBigNumber(user.speed || '0');
 
         const items = Array.isArray(user.items) ? user.items : [];
         if (items.length > 0) {
@@ -648,10 +1041,12 @@
           userItemsWrap.style.display = 'none';
         }
 
-        // Toon Admin Panel alleen als mr.fish.ytube@gmail.com is ingelogd
+        updateTrailUI(user);
+        treadmillSection.style.display = hasTreadmillAccess(user) ? 'block' : 'none';
+
         if (isAdminUser(user)) {
           adminSection.style.display = 'block';
-          loadAdminUsers();
+          if (adminTarget.options.length <= 2) loadAdminUsers();
         } else {
           adminSection.style.display = 'none';
         }
@@ -661,7 +1056,7 @@
         const token = getToken();
         if (!token) return;
         try {
-          const res = await fetch(getApiBase() + '/api/me', {
+          const res = await fetch(API_BASE + '/api/me', {
             headers: { 'Authorization': 'Bearer ' + token }
           });
           if (res.ok) {
@@ -672,68 +1067,6 @@
             }
           }
         } catch (e) {}
-      }
-
-      async function handleGoogleCredential(response) {
-        if (!response || !response.credential) return;
-        const apiBase = getApiBase();
-
-        try {
-          const res = await fetch(apiBase + '/api/auth/google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ credential: response.credential })
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.ok && data.user) {
-              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
-              if (data.token) localStorage.setItem('eggs_session_token', data.token);
-              renderUser(data.user);
-              showToast('✅ Ingelogd', 'Welkom ' + data.user.name + '!');
-              return;
-            }
-          }
-        } catch (e) {}
-
-        // Fallback als server lokaal nog uit staat
-        const payload = decodeJwtPayload(response.credential);
-        if (payload) {
-          const fallbackUser = {
-            id: payload.sub,
-            name: payload.name,
-            email: payload.email,
-            picture: payload.picture,
-            role: payload.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase() ? 'admin' : 'player',
-            diamonds: 0,
-            coins: 0,
-            speed: 0,
-            items: []
-          };
-          localStorage.setItem('eggs_google_user', JSON.stringify(fallbackUser));
-          renderUser(fallbackUser);
-        }
-      }
-
-      function initGoogleSignIn() {
-        if (window.google && window.google.accounts && window.google.accounts.id) {
-          window.google.accounts.id.initialize({
-            client_id: CONFIG.GOOGLE_CLIENT_ID,
-            callback: handleGoogleCredential
-          });
-          googleBtnContainer.innerHTML = '';
-          window.google.accounts.id.renderButton(googleBtnContainer, {
-            theme: 'filled_blue',
-            size: 'large',
-            text: 'continue_with',
-            shape: 'pill',
-            width: 240,
-            locale: 'nl'
-          });
-        } else {
-          setTimeout(initGoogleSignIn, 300);
-        }
       }
 
       logoutBtn.addEventListener('click', function () {
@@ -745,14 +1078,11 @@
         renderUser(null);
       });
 
-      // ============================================================
-      // ADMIN PANEL ACTIES (Alleen voor mr.fish.ytube@gmail.com)
-      // ============================================================
       async function loadAdminUsers() {
         const token = getToken();
         if (!token) return;
         try {
-          const res = await fetch(getApiBase() + '/api/admin/users', {
+          const res = await fetch(API_BASE + '/api/admin/users', {
             headers: { 'Authorization': 'Bearer ' + token }
           });
           if (!res.ok) return;
@@ -764,7 +1094,7 @@
 
           const optSelf = document.createElement('option');
           optSelf.value = 'SELF';
-          optSelf.textContent = '👑 Mezelf (' + CONFIG.ADMIN_EMAIL + ')';
+          optSelf.textContent = '👑 Mezelf (' + (currentUser ? currentUser.email : '') + ')';
           adminTarget.appendChild(optSelf);
 
           const optAll = document.createElement('option');
@@ -773,10 +1103,10 @@
           adminTarget.appendChild(optAll);
 
           data.users.forEach(function (u) {
-            if (u.email && u.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase()) return;
+            if (currentUser && u.id === currentUser.id) return;
             const opt = document.createElement('option');
             opt.value = u.id;
-            opt.textContent = (u.name || 'Speler') + ' (' + u.email + ')';
+            opt.textContent = (u.name || 'Speler') + ' [' + (u.role || 'player').toUpperCase() + '] (' + u.email + ')';
             adminTarget.appendChild(opt);
           });
 
@@ -787,34 +1117,31 @@
       }
 
       document.getElementById('adminRefreshUsersBtn').addEventListener('click', async function () {
-        adminFeedback.textContent = 'Lijst vernieuwen...';
+        setFeedback(adminFeedback, 'Spelerslijst vernieuwen...', false);
         await loadAdminUsers();
-        adminFeedback.textContent = '✅ Spelerslijst bijgewerkt!';
+        setFeedback(adminFeedback, '✅ Spelerslijst bijgewerkt!', false);
       });
 
       document.getElementById('adminGiveBtn').addEventListener('click', async function () {
         const token = getToken();
         if (!token) {
-          adminFeedback.textContent = '❌ Server niet verbonden of sessie verlopen.';
+          setFeedback(adminFeedback, '❌ Log eerst opnieuw in.', true);
           return;
         }
-
         const targetId = adminTarget.value === 'SELF' && currentUser ? currentUser.id : adminTarget.value;
-        const diamonds = parseInt(document.getElementById('giveDiamonds').value, 10) || 0;
-        const coins = parseInt(document.getElementById('giveCoins').value, 10) || 0;
-        const speed = parseInt(document.getElementById('giveSpeed').value, 10) || 0;
+        const diamonds = parseBigAmount(document.getElementById('giveDiamonds').value);
+        const coins = parseBigAmount(document.getElementById('giveCoins').value);
+        const speed = parseBigAmount(document.getElementById('giveSpeed').value);
         const role = document.getElementById('giveRole').value;
-        const presetItem = document.getElementById('givePresetItem').value;
-        const customItem = document.getElementById('giveCustomItem').value.trim();
-        const item = customItem || presetItem;
+        const item = document.getElementById('giveCustomItem').value.trim() || document.getElementById('givePresetItem').value;
 
-        if (!diamonds && !coins && !speed && !role && !item) {
-          adminFeedback.textContent = '⚠️ Vul minstens één waarde of item in.';
+        if (diamonds === '0' && coins === '0' && speed === '0' && !role && !item) {
+          setFeedback(adminFeedback, '⚠️ Vul minstens één waarde of item in.', true);
           return;
         }
 
         try {
-          const res = await fetch(getApiBase() + '/api/admin/give', {
+          const res = await fetch(API_BASE + '/api/admin/give', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -824,59 +1151,50 @@
           });
           const data = await res.json();
           if (res.ok && data.ok) {
-            adminFeedback.textContent = '✅ Gegeven: ' + data.summary;
-            document.getElementById('giveDiamonds').value = 0;
-            document.getElementById('giveCoins').value = 0;
-            document.getElementById('giveSpeed').value = 0;
+            setFeedback(adminFeedback, '✅ Gegeven: ' + data.summary, false);
+            document.getElementById('giveDiamonds').value = '0';
+            document.getElementById('giveCoins').value = '0';
+            document.getElementById('giveSpeed').value = '0';
             document.getElementById('giveRole').value = '';
             document.getElementById('givePresetItem').value = '';
             document.getElementById('giveCustomItem').value = '';
             await refreshMyProfile();
             await loadAdminUsers();
           } else {
-            adminFeedback.textContent = '❌ Fout: ' + (data.error || 'Kon niet geven');
+            setFeedback(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
           }
         } catch (e) {
-          adminFeedback.textContent = '❌ Server niet bereikbaar.';
+          setFeedback(adminFeedback, '❌ Server niet bereikbaar.', true);
         }
       });
 
       document.getElementById('adminAnnounceBtn').addEventListener('click', async function () {
         const text = document.getElementById('adminAnnounceText').value.trim();
         if (!text) return;
-        const token = getToken();
         try {
-          const res = await fetch(getApiBase() + '/api/admin/announce', {
+          const res = await fetch(API_BASE + '/api/admin/announce', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
+              'Authorization': 'Bearer ' + getToken()
             },
             body: JSON.stringify({ text })
           });
           const data = await res.json();
           if (res.ok && data.ok) {
             document.getElementById('adminAnnounceText').value = '';
-            adminFeedback.textContent = '✅ Melding verzonden naar iedereen!';
+            setFeedback(adminFeedback, '✅ Melding verzonden!', false);
           } else {
-            adminFeedback.textContent = '❌ ' + (data.error || 'Mislukt');
+            setFeedback(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
           }
         } catch (e) {
-          adminFeedback.textContent = '❌ Server niet bereikbaar.';
+          setFeedback(adminFeedback, '❌ Server niet bereikbaar.', true);
         }
       });
 
-      // ============================================================
-      // SERVER STATUS & SPEL LADEN (THEMA STAAT VAST)
-      // ============================================================
       async function checkServerHealth(wsUrl) {
         try {
-          const httpUrl = wsUrl
-            .replace(/^wss:/, 'https:')
-            .replace(/^ws:/, 'http:')
-            .replace(/\/[^/]*$/, '/api/health');
-
-          const res = await fetch(httpUrl);
+          const res = await fetch(API_BASE + '/api/health');
           if (res.ok) {
             const data = await res.json();
             const ch = '/' + wsUrl.split('/').pop();
@@ -893,10 +1211,8 @@
       function loadGame() {
         const ws = serverSelect.value;
         const tables = tablesInput.value.trim() || '10';
-
         localStorage.setItem('eggs_custom_server', ws);
         localStorage.setItem('eggs_custom_tables', tables);
-
         checkServerHealth(ws);
 
         const url = BASE_GAME_URL +
@@ -914,7 +1230,6 @@
         toggleMenu(true);
       });
 
-      // Opstarten
       (async function init() {
         const savedUser = localStorage.getItem('eggs_google_user');
         if (savedUser) {
