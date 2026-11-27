@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>3x3 Eggs — Admin &amp; Trails</title>
+  <title>3x3 Eggs — Speel &amp; Admin</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
@@ -25,6 +25,19 @@
       pointer-events: none;
     }
 
+    .game-area {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    #gameSrc {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
     #nav-toggle {
       position: fixed;
       left: 0;
@@ -42,6 +55,7 @@
       justify-content: center;
       font-size: 20px;
       transition: left 0.25s ease, background 0.2s;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.35);
     }
     #nav-toggle:hover { background: #1d4ed8; }
     #nav-toggle.active {
@@ -263,26 +277,6 @@
       line-height: 1.35;
     }
     .toast strong { color: #fbbf24; }
-
-    .main-area {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      text-align: center;
-    }
-    .hero-box {
-      max-width: 520px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 28px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-    }
-    .hero-box h1 { font-size: 1.8rem; color: #38bdf8; margin-bottom: 10px; }
-    .hero-box p { color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -292,15 +286,20 @@
   <div id="darkScreen"></div>
   <div id="toastContainer"></div>
 
-  <div class="main-area">
-    <div class="hero-box">
-      <h1>🥚 Custom Account &amp; Admin Portal</h1>
-      <p>Open het zijmenu (<strong>☰</strong>) om in te loggen, je account te beheren, trails te activeren en via het <strong>Admin Panel</strong> spullen, munten, diamanten of rangen uit te delen.</p>
-    </div>
+  <div class="game-area">
+    <object
+      id="gameSrc"
+      scrolling="no"
+      height="100%"
+      width="100%"
+      frameborder="0"
+      allowfullscreen="true"
+      data="https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html?timestables=10&amp;lang=nl&amp;swap=1&amp;theme=winter">
+    </object>
   </div>
 
-  <nav id="mnu" class="open">
-    <h2>🥚 Custom Menu</h2>
+  <nav id="mnu">
+    <h2>🥚 3x3 Eggs</h2>
 
     <h3>Account</h3>
     <div class="card">
@@ -462,14 +461,27 @@
         <div id="adminFeedback" class="feedback"></div>
       </div>
     </div>
+
+    <h3>Spelinstellingen</h3>
+    <div class="card">
+      <div class="field">
+        <label for="tablesInput">Tafels (bijv. 10 of 1,2,5,10)</label>
+        <input type="text" id="tablesInput" value="10">
+      </div>
+      <button type="button" class="btn btn-primary" id="applyGameBtn">Spel herladen met tafels</button>
+      <button type="button" class="btn btn-secondary" id="fsBtn">⛶ Volledig scherm</button>
+    </div>
   </nav>
 
   <script>
     (function () {
       const CONFIG = {
         GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
-        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com'
+        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
+        LOCKED_THEME: 'winter'
       };
+
+      const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
 
       const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
         ? window.location.origin
@@ -497,6 +509,8 @@
       const navToggle = document.getElementById('nav-toggle');
       const mnu = document.getElementById('mnu');
       const darkScreen = document.getElementById('darkScreen');
+      const gameSrc = document.getElementById('gameSrc');
+      const tablesInput = document.getElementById('tablesInput');
       const toastContainer = document.getElementById('toastContainer');
 
       const loggedOutBox = document.getElementById('loggedOutBox');
@@ -527,6 +541,28 @@
       const adminSection = document.getElementById('adminSection');
       const adminTarget = document.getElementById('adminTarget');
       const adminFeedback = document.getElementById('adminFeedback');
+
+      tablesInput.value = localStorage.getItem('eggs_custom_tables') || '10';
+
+      function loadGameUrl() {
+        const tables = tablesInput.value.trim() || '10';
+        localStorage.setItem('eggs_custom_tables', tables);
+        const url = BASE_GAME_URL +
+          '?timestables=' + encodeURIComponent(tables) +
+          '&lang=nl&swap=1&theme=' + encodeURIComponent(CONFIG.LOCKED_THEME);
+        gameSrc.setAttribute('data', url);
+      }
+
+      document.getElementById('applyGameBtn').addEventListener('click', () => {
+        loadGameUrl();
+        toggleMenu(true);
+      });
+
+      document.getElementById('fsBtn').addEventListener('click', () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen().catch(() => {});
+        toggleMenu(true);
+      });
 
       // Trail Canvas
       const trailCanvas = document.getElementById('trailCanvas');
@@ -981,6 +1017,7 @@
       });
 
       (async function init() {
+        loadGameUrl();
         const saved = localStorage.getItem('eggs_user');
         if (saved) {
           try { renderUser(JSON.parse(saved)); } catch (e) {}
