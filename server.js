@@ -9,16 +9,11 @@ const PORT = process.env.PORT || 3000;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com';
 const ADMIN_EMAIL = 'mr.fish.ytube@gmail.com'.toLowerCase();
 const AUTO_VERIFY_DOMAIN = '@ll.flevion.nl';
-const MAX_PLAYERS_PER_ROOM = 7;
 
 function toBig(val) {
   const cleaned = String(val ?? '0').replace(/[^0-9-]/g, '').trim();
   if (!cleaned || cleaned === '-') return 0n;
-  try {
-    return BigInt(cleaned);
-  } catch (e) {
-    return 0n;
-  }
+  try { return BigInt(cleaned); } catch (e) { return 0n; }
 }
 
 function addClampedBig(currentVal, deltaVal) {
@@ -102,10 +97,11 @@ function readJsonBody(req) {
   });
 }
 
-function sendJson(res, status, obj) {
+function sendJson(req, res, status, obj) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': req.headers.origin || '*',
+    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   });
@@ -140,46 +136,13 @@ function broadcastSiteEvent(payload) {
   }
 }
 
-const channels = new Map();
-
-function generateCode() {
-  const words = ['custom', 'ei', 'zon', 'ster', 'wolk', 'bloem', 'vlam'];
-  return words[Math.floor(Math.random() * words.length)] + Math.floor(1000 + Math.random() * 9000);
-}
-function getChannel(name) {
-  if (!channels.has(name)) channels.set(name, new Map());
-  return channels.get(name);
-}
-function findOrCreatePublicRoom(ch) {
-  const rooms = getChannel(ch);
-  for (const r of rooms.values()) {
-    if (!r.isPrivate && r.clients.size < MAX_PLAYERS_PER_ROOM) return r;
-  }
-  const code = generateCode();
-  const room = { code, isPrivate: false, clients: new Map() };
-  rooms.set(code, room);
-  return room;
-}
-function createPrivateRoom(ch) {
-  const rooms = getChannel(ch);
-  const code = generateCode();
-  const room = { code, isPrivate: true, clients: new Map() };
-  rooms.set(code, room);
-  return room;
-}
-function broadcastRoom(room, payload, excludeId = null) {
-  const data = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  for (const [id, client] of room.clients.entries()) {
-    if (id !== excludeId && client.ws.readyState === 1) client.ws.send(data);
-  }
-}
-
 const server = http.createServer(async (req, res) => {
   const urlPath = (req.url || '/').split('?')[0];
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': req.headers.origin || '*',
+      'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     });
@@ -197,13 +160,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && urlPath === '/api/health') {
-    const stats = {};
-    for (const [ch, rooms] of channels.entries()) {
-      let online = 0;
-      for (const r of rooms.values()) online += r.clients.size;
-      stats[ch] = { rooms: rooms.size, online };
-    }
-    sendJson(res, 200, { ok: true, usersCount: Object.keys(db.users).length, channels: stats });
+    sendJson(req, res, 200, { ok: true, usersCount: Object.keys(db.users).length });
     return;
   }
 
@@ -215,15 +172,15 @@ const server = http.createServer(async (req, res) => {
       const name = String(body.name || '').trim() || email.split('@')[0];
 
       if (!email || !email.includes('@')) {
-        sendJson(res, 400, { ok: false, error: 'Vul een geldig e-mailadres in.' });
+        sendJson(req, res, 400, { ok: false, error: 'Vul een geldig e-mailadres in.' });
         return;
       }
       if (password.length < 4) {
-        sendJson(res, 400, { ok: false, error: 'Wachtwoord moet minstens 4 tekens zijn.' });
+        sendJson(req, res, 400, { ok: false, error: 'Wachtwoord moet minstens 4 tekens zijn.' });
         return;
       }
       if (findUserByEmail(email)) {
-        sendJson(res, 409, { ok: false, error: 'Dit e-mailadres heeft al een account. Log in!' });
+        sendJson(req, res, 409, { ok: false, error: 'Dit e-mailadres bestaat al. Log in!' });
         return;
       }
 
@@ -253,17 +210,16 @@ const server = http.createServer(async (req, res) => {
 
       if (skipVerify) {
         const token = createSession(uid);
-        sendJson(res, 200, { ok: true, token, user: publicUser(db.users[uid]) });
+        sendJson(req, res, 200, { ok: true, token, user: publicUser(db.users[uid]) });
       } else {
-        console.log(`[VERIFY] Code voor ${email}: ${verifyCode}`);
-        sendJson(res, 200, {
+        sendJson(req, res, 200, {
           ok: true,
           needsVerification: true,
           message: `Verificatiecode voor ${email}: ${verifyCode} (voor @ll.flevion.nl is geen code nodig)`
         });
       }
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij registreren.' });
+      sendJson(req, 500, { ok: false, error: 'Serverfout bij registreren.' });
     }
     return;
   }
@@ -273,20 +229,20 @@ const server = http.createServer(async (req, res) => {
       const body = await readJsonBody(req);
       const user = findUserByEmail(body.email);
       if (!user) {
-        sendJson(res, 404, { ok: false, error: 'Account niet gevonden.' });
+        sendJson(req, res, 404, { ok: false, error: 'Account niet gevonden.' });
         return;
       }
       if (String(body.code || '').trim() !== String(user.verifyCode)) {
-        sendJson(res, 400, { ok: false, error: 'Verificatiecode klopt niet.' });
+        sendJson(req, res, 400, { ok: false, error: 'Verificatiecode klopt niet.' });
         return;
       }
       user.verified = true;
       user.verifyCode = null;
       saveDB();
       const token = createSession(user.id);
-      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+      sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij verifiëren.' });
+      sendJson(req, 500, { ok: false, error: 'Serverfout bij verifiëren.' });
     }
     return;
   }
@@ -299,11 +255,11 @@ const server = http.createServer(async (req, res) => {
       const user = findUserByEmail(email);
 
       if (!user || user.passwordHash !== hashPassword(password)) {
-        sendJson(res, 401, { ok: false, error: 'Onjuist e-mailadres of wachtwoord.' });
+        sendJson(req, res, 401, { ok: false, error: 'Onjuist e-mailadres of wachtwoord.' });
         return;
       }
       if (!user.verified && !email.endsWith(AUTO_VERIFY_DOMAIN) && email !== ADMIN_EMAIL) {
-        sendJson(res, 403, {
+        sendJson(req, res, 403, {
           ok: false,
           needsVerification: true,
           message: `Account nog niet geverifieerd. Code: ${user.verifyCode}`
@@ -315,9 +271,9 @@ const server = http.createServer(async (req, res) => {
       saveDB();
 
       const token = createSession(user.id);
-      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+      sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij inloggen.' });
+      sendJson(req, 500, { ok: false, error: 'Serverfout bij inloggen.' });
     }
     return;
   }
@@ -326,17 +282,17 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await readJsonBody(req);
       if (!body.credential) {
-        sendJson(res, 400, { ok: false, error: 'Geen Google token ontvangen.' });
+        sendJson(req, res, 400, { ok: false, error: 'Geen Google token ontvangen.' });
         return;
       }
       const verifyRes = await httpsGetJson('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(body.credential));
       if (verifyRes.status !== 200 || !verifyRes.data || !verifyRes.data.sub) {
-        sendJson(res, 401, { ok: false, error: 'Ongeldig Google token.' });
+        sendJson(req, res, 401, { ok: false, error: 'Ongeldig Google token.' });
         return;
       }
       const payload = verifyRes.data;
       if (GOOGLE_CLIENT_ID && payload.aud !== GOOGLE_CLIENT_ID) {
-        sendJson(res, 401, { ok: false, error: 'Google Client ID komt niet overeen.' });
+        sendJson(req, res, 401, { ok: false, error: 'Google Client ID komt niet overeen.' });
         return;
       }
 
@@ -370,9 +326,9 @@ const server = http.createServer(async (req, res) => {
       saveDB();
 
       const token = createSession(user.id);
-      sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+      sendJson(req, res, 200, { ok: true, token, user: publicUser(user) });
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij Google login.' });
+      sendJson(req, 500, { ok: false, error: 'Serverfout bij Google login.' });
     }
     return;
   }
@@ -380,48 +336,27 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && urlPath === '/api/me') {
     const user = getAuthUser(req);
     if (!user) {
-      sendJson(res, 401, { ok: false, error: 'Niet ingelogd.' });
+      sendJson(req, res, 401, { ok: false, error: 'Niet ingelogd.' });
       return;
     }
-    sendJson(res, 200, { ok: true, user: publicUser(user) });
-    return;
-  }
-
-  if (req.method === 'POST' && urlPath === '/api/treadmill/tick') {
-    const user = getAuthUser(req);
-    if (!user) {
-      sendJson(res, 401, { ok: false, error: 'Niet ingelogd.' });
-      return;
-    }
-    const allowed = isAdmin(user) || (Array.isArray(user.items) && user.items.includes('🏃 Admin Treadmill'));
-    if (!allowed) {
-      sendJson(res, 403, { ok: false, error: 'Geen toegang tot Admin Treadmill.' });
-      return;
-    }
-    const body = await readJsonBody(req);
-    const pBig = toBig(body.power || '100');
-    const clampedPower = pBig > 1000000000n ? 1000000000n : (pBig < 10n ? 10n : pBig);
-    user.speed = addClampedBig(user.speed, clampedPower);
-    user.coins = addClampedBig(user.coins, clampedPower * 2n);
-    saveDB();
-    sendJson(res, 200, { ok: true, user: publicUser(user) });
+    sendJson(req, res, 200, { ok: true, user: publicUser(user) });
     return;
   }
 
   if (req.method === 'GET' && urlPath === '/api/admin/users') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
+      sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
-    sendJson(res, 200, { ok: true, users: Object.values(db.users).map(publicUser) });
+    sendJson(req, res, 200, { ok: true, users: Object.values(db.users).map(publicUser) });
     return;
   }
 
   if (req.method === 'POST' && urlPath === '/api/admin/give') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
+      sendJson(req, res, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
     try {
@@ -438,7 +373,7 @@ const server = http.createServer(async (req, res) => {
         : (db.users[targetId] ? [db.users[targetId]] : []);
 
       if (targets.length === 0) {
-        sendJson(res, 404, { ok: false, error: 'Speler niet gevonden.' });
+        sendJson(req, 404, { ok: false, error: 'Speler niet gevonden.' });
         return;
       }
 
@@ -455,9 +390,7 @@ const server = http.createServer(async (req, res) => {
         u.speed = addClampedBig(u.speed, sBig);
         if (cleanItem) {
           if (!Array.isArray(u.items)) u.items = [];
-          if (!u.items.includes(cleanItem)) {
-            u.items.push(cleanItem);
-          }
+          if (!u.items.includes(cleanItem)) u.items.push(cleanItem);
         }
         if (cleanRole) {
           u.role = (u.email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : cleanRole;
@@ -473,9 +406,9 @@ const server = http.createServer(async (req, res) => {
         summary
       });
 
-      sendJson(res, 200, { ok: true, count: targets.length, summary });
+      sendJson(req, res, 200, { ok: true, count: targets.length, summary });
     } catch (err) {
-      sendJson(res, 500, { ok: false, error: 'Serverfout bij geven.' });
+      sendJson(req, 500, { ok: false, error: 'Serverfout bij geven.' });
     }
     return;
   }
@@ -483,17 +416,17 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && urlPath === '/api/admin/announce') {
     const admin = getAuthUser(req);
     if (!isAdmin(admin)) {
-      sendJson(res, 403, { ok: false, error: 'Geen admin rechten.' });
+      sendJson(req, 403, { ok: false, error: 'Geen admin rechten.' });
       return;
     }
     const body = await readJsonBody(req);
     const text = String(body.text || '').trim().slice(0, 200);
     if (!text) {
-      sendJson(res, 400, { ok: false, error: 'Bericht is leeg.' });
+      sendJson(req, 400, { ok: false, error: 'Bericht is leeg.' });
       return;
     }
     broadcastSiteEvent({ type: 'announcement', from: admin.name, text });
-    sendJson(res, 200, { ok: true });
+    sendJson(req, 200, { ok: true });
     return;
   }
 
@@ -502,47 +435,13 @@ const server = http.createServer(async (req, res) => {
 
 const wss = new WebSocketServer({ server });
 wss.on('connection', (ws, req) => {
-  const channelName = (req.url || '/server1').split('?')[0];
+  const channelName = (req.url || '').split('?')[0];
   if (channelName === '/site-events') {
     siteEventClients.add(ws);
     ws.on('close', () => siteEventClients.delete(ws));
-    return;
   }
-
-  const playerId = Math.random().toString(36).slice(2, 10);
-  let currentRoom = findOrCreatePublicRoom(channelName);
-  currentRoom.clients.set(playerId, { ws, state: {} });
-
-  ws.on('message', (raw) => {
-    const text = raw.toString();
-    let msg = null;
-    try { msg = JSON.parse(text); } catch (e) {}
-    if (msg && (msg.type === 'private' || msg.action === 'private')) {
-      currentRoom.clients.delete(playerId);
-      currentRoom = createPrivateRoom(channelName);
-      currentRoom.clients.set(playerId, { ws, state: {} });
-      ws.send(JSON.stringify({ type: 'room', code: currentRoom.code, private: true }));
-      return;
-    }
-    if (msg && (msg.type === 'join' || msg.action === 'join') && msg.code) {
-      const target = getChannel(channelName).get(String(msg.code).toLowerCase());
-      if (target && target.clients.size < MAX_PLAYERS_PER_ROOM) {
-        currentRoom.clients.delete(playerId);
-        currentRoom = target;
-        currentRoom.clients.set(playerId, { ws, state: {} });
-        ws.send(JSON.stringify({ type: 'room', code: currentRoom.code }));
-      }
-      return;
-    }
-    broadcastRoom(currentRoom, text, playerId);
-  });
-
-  ws.on('close', () => {
-    currentRoom.clients.delete(playerId);
-    if (currentRoom.clients.size === 0) getChannel(channelName).delete(currentRoom.code);
-  });
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server draait op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
+  console.log(`🚀 Simpele Admin Server draait op poort ${PORT} | Admin: ${ADMIN_EMAIL}`);
 });

@@ -1,6 +1,6 @@
 {
-  "name": "3x3-eggs-custom-server",
-  "version": "5.0.0",
+  "name": "3x3-eggs-admin-simple",
+  "version": "7.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

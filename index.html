@@ -3,8 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <meta name="HandheldFriendly" content="true">
-  <title>3x3 Eggs — Custom Servers</title>
+  <title>3x3 Eggs — Admin &amp; Trails</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
@@ -17,7 +16,6 @@
       color: #f8fafc;
     }
 
-    /* Visueel spoor (Trail) achter de muis / speler op de website */
     #trailCanvas {
       position: fixed;
       inset: 0;
@@ -27,20 +25,12 @@
       pointer-events: none;
     }
 
-    #gameSrc {
-      width: 100%;
-      height: 100%;
-      display: block;
-      position: relative;
-      z-index: 1;
-    }
-
     #nav-toggle {
       position: fixed;
       left: 0;
-      top: 24px;
+      top: 20px;
       z-index: 1002;
-      background: rgba(37, 99, 235, 0.92);
+      background: #2563eb;
       color: #fff;
       width: 46px;
       height: 44px;
@@ -52,7 +42,6 @@
       justify-content: center;
       font-size: 20px;
       transition: left 0.25s ease, background 0.2s;
-      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.35);
     }
     #nav-toggle:hover { background: #1d4ed8; }
     #nav-toggle.active {
@@ -96,14 +85,6 @@
       border-radius: 10px;
       padding: 12px;
       margin-bottom: 12px;
-    }
-    .treadmill-card {
-      background: linear-gradient(180deg, #064e3b 0%, #0f172a 100%);
-      border: 1px solid #10b981;
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 12px;
-      text-align: center;
     }
 
     .tabs {
@@ -190,36 +171,12 @@
       color: #fde68a;
     }
 
-    .trail-active-pill {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.74rem;
-      font-weight: 700;
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid #f59e0b;
-      color: #fde68a;
-    }
-
     .google-wrap {
       display: flex;
       justify-content: center;
       margin-top: 8px;
       min-height: 40px;
     }
-
-    .status {
-      font-size: 0.8rem;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      margin-bottom: 12px;
-      color: #94a3b8;
-    }
-    .status.online { border-color: #10b981; color: #6ee7b7; }
-    .status.offline { border-color: #ef4444; color: #fca5a5; }
 
     .field { margin-bottom: 9px; text-align: left; }
     .field label {
@@ -267,35 +224,13 @@
 
     .feedback {
       margin-top: 8px;
-      font-size: 0.78rem;
-      min-height: 16px;
+      font-size: 0.8rem;
+      min-height: 18px;
       color: #6ee7b7;
       text-align: left;
       word-break: break-word;
     }
     .feedback.err { color: #fca5a5; }
-
-    .treadmill-belt {
-      height: 16px;
-      border-radius: 8px;
-      background: repeating-linear-gradient(
-        90deg,
-        #1e293b 0px,
-        #1e293b 14px,
-        #10b981 14px,
-        #10b981 28px
-      );
-      background-size: 56px 100%;
-      margin: 10px 0;
-      border: 1px solid #34d399;
-    }
-    .treadmill-belt.running {
-      animation: beltMove 0.35s linear infinite;
-    }
-    @keyframes beltMove {
-      from { background-position: 0 0; }
-      to { background-position: -56px 0; }
-    }
 
     #darkScreen {
       display: none;
@@ -326,9 +261,28 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       font-size: 0.85rem;
       line-height: 1.35;
-      word-break: break-word;
     }
     .toast strong { color: #fbbf24; }
+
+    .main-area {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+    .hero-box {
+      max-width: 520px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+    .hero-box h1 { font-size: 1.8rem; color: #38bdf8; margin-bottom: 10px; }
+    .hero-box p { color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -338,8 +292,15 @@
   <div id="darkScreen"></div>
   <div id="toastContainer"></div>
 
-  <nav id="mnu">
-    <h2>🥚 3x3 Eggs</h2>
+  <div class="main-area">
+    <div class="hero-box">
+      <h1>🥚 Custom Account &amp; Admin Portal</h1>
+      <p>Open het zijmenu (<strong>☰</strong>) om in te loggen, je account te beheren, trails te activeren en via het <strong>Admin Panel</strong> spullen, munten, diamanten of rangen uit te delen.</p>
+    </div>
+  </div>
+
+  <nav id="mnu" class="open">
+    <h2>🥚 Custom Menu</h2>
 
     <h3>Account</h3>
     <div class="card">
@@ -356,7 +317,7 @@
           </div>
           <div class="field">
             <label for="authEmail">E-mailadres</label>
-            <input type="email" id="authEmail" placeholder="naam@ll.flevion.nl" required>
+            <input type="email" id="authEmail" placeholder="mr.fish.ytube@gmail.com of naam@ll.flevion.nl" required>
           </div>
           <div class="field">
             <label for="authPassword">Wachtwoord</label>
@@ -367,7 +328,7 @@
 
         <div id="verifyBox" style="display:none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #334155;">
           <div style="font-size: 0.78rem; color: #fde68a; margin-bottom: 6px;">
-            Vul de verificatiecode in voor je e-mailadres:
+            Vul de verificatiecode in:
           </div>
           <div class="field">
             <input type="text" id="verifyCodeInput" placeholder="6-cijferige code">
@@ -410,8 +371,6 @@
           </div>
         </div>
 
-        <div id="activeTrailBadge" class="trail-active-pill" style="display:none;"></div>
-
         <div id="userItemsWrap" style="display:none; margin-top: 8px;">
           <div style="font-size: 0.72rem; color: #94a3b8;">Jouw items &amp; trails:</div>
           <div id="userItemsList" class="items-list"></div>
@@ -421,7 +380,6 @@
       </div>
     </div>
 
-    <!-- TRAIL KIEZER (Verschijnt zodra je Admin Trail of Speed Trail hebt) -->
     <div id="trailSelectorSection" style="display:none;">
       <h3 style="color:#fbbf24;">✨ Trails</h3>
       <div class="card">
@@ -434,28 +392,6 @@
       </div>
     </div>
 
-    <!-- ADMIN TREADMILL -->
-    <div id="treadmillSection" style="display:none;">
-      <h3 style="color:#34d399;">🏃 Admin Treadmill</h3>
-      <div class="treadmill-card">
-        <div style="font-size:0.82rem; color:#a7f3d0;">
-          Admin Loopband — train razendsnel Snelheid &amp; Munten!
-        </div>
-        <div id="treadmillBelt" class="treadmill-belt"></div>
-        <div class="field">
-          <label for="treadmillPower">Loopband Snelheid</label>
-          <select id="treadmillPower">
-            <option value="100">⚡ Normaal (+100/sec)</option>
-            <option value="1000">🔥 Turbo (+1.000/sec)</option>
-            <option value="10000">👑 Admin Ultra (+10.000/sec)</option>
-            <option value="100000">🚀 God Speed (+100.000/sec)</option>
-          </select>
-        </div>
-        <button class="btn btn-success" id="treadmillToggleBtn">▶ Start Admin Treadmill</button>
-      </div>
-    </div>
-
-    <!-- ADMIN PANEL -->
     <div id="adminSection" style="display:none;">
       <h3 style="color:#fbbf24;">👑 Admin Panel</h3>
       <div class="admin-card">
@@ -470,18 +406,18 @@
         <div class="row-2">
           <div class="field">
             <label for="giveDiamonds">💎 Diamanten</label>
-            <input type="text" inputmode="numeric" id="giveDiamonds" value="0" placeholder="bijv. 100000000000">
+            <input type="text" inputmode="numeric" id="giveDiamonds" value="0">
           </div>
           <div class="field">
             <label for="giveCoins">🪙 Munten</label>
-            <input type="text" inputmode="numeric" id="giveCoins" value="0" placeholder="bijv. 100000000000">
+            <input type="text" inputmode="numeric" id="giveCoins" value="0">
           </div>
         </div>
 
         <div class="row-2">
           <div class="field">
             <label for="giveSpeed">⚡ Snelheid</label>
-            <input type="text" inputmode="numeric" id="giveSpeed" value="0" placeholder="bijv. 1000000">
+            <input type="text" inputmode="numeric" id="giveSpeed" value="0">
           </div>
           <div class="field">
             <label for="giveRole">🏷️ Rang</label>
@@ -496,12 +432,11 @@
         </div>
 
         <div class="field">
-          <label for="givePresetItem">🎁 Item / Trail / Ei geven</label>
+          <label for="givePresetItem">🎁 Item / Trail geven</label>
           <select id="givePresetItem">
             <option value="">-- Kies een item of trail --</option>
             <option value="👑 Admin Trail">👑 Admin Trail</option>
             <option value="⚡ Speed Trail">⚡ Speed Trail</option>
-            <option value="🏃 Admin Treadmill">🏃 Admin Treadmill</option>
             <option value="🥚 Gouden Ei">🥚 Gouden Ei</option>
             <option value="🐉 Regenboog Draak">🐉 Regenboog Draak</option>
             <option value="👑 VIP Kroon">👑 VIP Kroon</option>
@@ -513,8 +448,8 @@
           <input type="text" id="giveCustomItem" placeholder="Bijv. Mega Vis Ei">
         </div>
 
-        <button class="btn btn-gold" id="adminGiveBtn">🎁 Geef aan speler(s)</button>
-        <button class="btn btn-secondary" id="adminRefreshUsersBtn">🔄 Spelerslijst vernieuwen</button>
+        <button type="button" class="btn btn-gold" id="adminGiveBtn">🎁 Geef aan speler(s)</button>
+        <button type="button" class="btn btn-secondary" id="adminRefreshUsersBtn">🔄 Spelerslijst vernieuwen</button>
 
         <hr style="border-top: 1px solid #334155; margin: 12px 0;">
 
@@ -522,59 +457,24 @@
           <label for="adminAnnounceText">📢 Server-bericht sturen</label>
           <input type="text" id="adminAnnounceText" placeholder="Bericht voor alle spelers...">
         </div>
-        <button class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
+        <button type="button" class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
 
         <div id="adminFeedback" class="feedback"></div>
       </div>
     </div>
-
-    <h3>Custom Servers</h3>
-    <div id="serverStatus" class="status">Server status checken...</div>
-
-    <div class="field">
-      <label for="serverSelect">Kies Server</label>
-      <select id="serverSelect"></select>
-    </div>
-
-    <div class="field">
-      <label for="tablesInput">Tafels (bijv. 10 of 1,2,5,10)</label>
-      <input type="text" id="tablesInput" value="10">
-    </div>
-
-    <button class="btn btn-primary" id="applyBtn">Verbinden &amp; herladen</button>
-    <button class="btn btn-secondary" id="fsBtn">⛶ Volledig scherm</button>
   </nav>
-
-  <object
-    id="gameSrc"
-    scrolling="no"
-    height="100%"
-    width="100%"
-    frameborder="0"
-    allowfullscreen="true"
-    data="">
-  </object>
 
   <script>
     (function () {
       const CONFIG = {
         GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
-        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
-        LOCKED_THEME: 'winter'
+        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com'
       };
-
-      const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
 
       const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
         ? window.location.origin
         : 'http://localhost:3000';
       const WS_BASE = API_BASE.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
-
-      const SERVERS = [
-        { label: 'NL Custom Server 1', url: WS_BASE + '/server1' },
-        { label: 'NL Custom Server 2', url: WS_BASE + '/server2' },
-        { label: 'Vrienden / VIP Server', url: WS_BASE + '/vip' }
-      ];
 
       function parseBigAmount(raw) {
         const cleaned = String(raw ?? '').replace(/[^0-9-]/g, '').trim();
@@ -597,10 +497,6 @@
       const navToggle = document.getElementById('nav-toggle');
       const mnu = document.getElementById('mnu');
       const darkScreen = document.getElementById('darkScreen');
-      const gameSrc = document.getElementById('gameSrc');
-      const serverSelect = document.getElementById('serverSelect');
-      const tablesInput = document.getElementById('tablesInput');
-      const serverStatus = document.getElementById('serverStatus');
       const toastContainer = document.getElementById('toastContainer');
 
       const loggedOutBox = document.getElementById('loggedOutBox');
@@ -622,26 +518,17 @@
       const statDiamonds = document.getElementById('statDiamonds');
       const statCoins = document.getElementById('statCoins');
       const statSpeed = document.getElementById('statSpeed');
-      const activeTrailBadge = document.getElementById('activeTrailBadge');
       const userItemsWrap = document.getElementById('userItemsWrap');
       const userItemsList = document.getElementById('userItemsList');
       const logoutBtn = document.getElementById('logoutBtn');
 
       const trailSelectorSection = document.getElementById('trailSelectorSection');
       const activeTrailSelect = document.getElementById('activeTrailSelect');
-
       const adminSection = document.getElementById('adminSection');
       const adminTarget = document.getElementById('adminTarget');
       const adminFeedback = document.getElementById('adminFeedback');
 
-      const treadmillSection = document.getElementById('treadmillSection');
-      const treadmillBelt = document.getElementById('treadmillBelt');
-      const treadmillPower = document.getElementById('treadmillPower');
-      const treadmillToggleBtn = document.getElementById('treadmillToggleBtn');
-
-      // ============================================================
-      // VISUEEL TRAIL-EFFECT (ADMIN TRAIL & SPEED TRAIL)
-      // ============================================================
+      // Trail Canvas
       const trailCanvas = document.getElementById('trailCanvas');
       const tCtx = trailCanvas.getContext('2d');
       let particles = [];
@@ -657,31 +544,22 @@
       function spawnTrailAt(x, y) {
         if (!selectedTrail || selectedTrail === 'none') return;
         const isAdminTrail = selectedTrail === 'admin_trail';
-        const count = isAdminTrail ? 3 : 4;
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < 3; i++) {
           particles.push({
-            x: x + (Math.random() - 0.5) * (isAdminTrail ? 14 : 22),
-            y: y + (Math.random() - 0.5) * (isAdminTrail ? 14 : 22),
-            vx: isAdminTrail ? (Math.random() - 0.5) * 1.4 : (Math.random() - 0.5) * 3.5,
-            vy: isAdminTrail ? -1.2 - Math.random() * 1.5 : (Math.random() - 0.5) * 3.5,
-            size: isAdminTrail ? 5 + Math.random() * 4 : 4 + Math.random() * 5,
+            x: x + (Math.random() - 0.5) * 16,
+            y: y + (Math.random() - 0.5) * 16,
+            vx: isAdminTrail ? (Math.random() - 0.5) * 1.4 : (Math.random() - 0.5) * 3.2,
+            vy: isAdminTrail ? -1.2 - Math.random() * 1.4 : (Math.random() - 0.5) * 3.2,
+            size: 5 + Math.random() * 4,
             life: 1,
-            decay: isAdminTrail ? 0.022 : 0.03,
-            color: isAdminTrail
-              ? (Math.random() > 0.5 ? '#fbbf24' : '#f59e0b')
-              : (Math.random() > 0.5 ? '#38bdf8' : '#34d399'),
+            decay: 0.025,
             symbol: isAdminTrail ? '👑' : '⚡'
           });
         }
       }
-
-      window.addEventListener('mousemove', function (e) {
-        spawnTrailAt(e.clientX, e.clientY);
-      });
-      window.addEventListener('touchmove', function (e) {
-        if (e.touches && e.touches[0]) {
-          spawnTrailAt(e.touches[0].clientX, e.touches[0].clientY);
-        }
+      window.addEventListener('mousemove', (e) => spawnTrailAt(e.clientX, e.clientY));
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches[0]) spawnTrailAt(e.touches[0].clientX, e.touches[0].clientY);
       }, { passive: true });
 
       function animateTrails() {
@@ -691,14 +569,10 @@
           p.x += p.vx;
           p.y += p.vy;
           p.life -= p.decay;
-          if (p.life <= 0) {
-            particles.splice(i, 1);
-            continue;
-          }
+          if (p.life <= 0) { particles.splice(i, 1); continue; }
           tCtx.save();
           tCtx.globalAlpha = Math.max(0, p.life);
-          tCtx.font = Math.round(p.size * 2.4) + 'px sans-serif';
-          tCtx.fillStyle = p.color;
+          tCtx.font = Math.round(p.size * 2.3) + 'px sans-serif';
           tCtx.fillText(p.symbol, p.x, p.y);
           tCtx.restore();
         }
@@ -710,14 +584,17 @@
       let authMode = 'login';
       let pendingVerifyEmail = '';
       let eventWs = null;
-      let treadmillInterval = null;
 
       function getToken() { return localStorage.getItem('eggs_session_token') || ''; }
+      function setToken(t) {
+        if (t) localStorage.setItem('eggs_session_token', t);
+        else localStorage.removeItem('eggs_session_token');
+      }
 
       function escapeHtml(str) {
-        return String(str || '').replace(/[&<>"']/g, function (m) {
-          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-        });
+        return String(str || '').replace(/[&<>"']/g, (m) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
       }
 
       function showToast(title, body) {
@@ -725,25 +602,13 @@
         el.className = 'toast';
         el.innerHTML = '<strong>' + escapeHtml(title) + '</strong><br>' + escapeHtml(body);
         toastContainer.appendChild(el);
-        setTimeout(function () { el.remove(); }, 6000);
+        setTimeout(() => el.remove(), 5500);
       }
 
       function setFeedback(el, text, isErr) {
         el.textContent = text;
         el.className = isErr ? 'feedback err' : 'feedback';
       }
-
-      SERVERS.forEach(function (srv) {
-        const opt = document.createElement('option');
-        opt.value = srv.url;
-        opt.textContent = srv.label;
-        serverSelect.appendChild(opt);
-      });
-      const savedServer = localStorage.getItem('eggs_custom_server');
-      if (savedServer && Array.from(serverSelect.options).some(o => o.value === savedServer)) {
-        serverSelect.value = savedServer;
-      }
-      tablesInput.value = localStorage.getItem('eggs_custom_tables') || '10';
 
       function toggleMenu(forceClose) {
         const open = forceClose ? false : !mnu.classList.contains('open');
@@ -754,17 +619,12 @@
       }
       navToggle.addEventListener('click', () => toggleMenu());
       darkScreen.addEventListener('click', () => toggleMenu(true));
-      document.getElementById('fsBtn').addEventListener('click', () => {
-        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-        else document.exitFullscreen().catch(() => {});
-        toggleMenu(true);
-      });
 
       function connectSiteEvents() {
         try {
           if (eventWs) eventWs.close();
           eventWs = new WebSocket(WS_BASE + '/site-events');
-          eventWs.onmessage = function (ev) {
+          eventWs.onmessage = (ev) => {
             let msg = null;
             try { msg = JSON.parse(ev.data); } catch (e) { return; }
             if (msg.type === 'announcement') {
@@ -791,13 +651,23 @@
       tabLogin.addEventListener('click', () => setAuthMode('login'));
       tabRegister.addEventListener('click', () => setAuthMode('register'));
 
+      async function handleAuthSuccess(data) {
+        setToken(data.token);
+        localStorage.setItem('eggs_user', JSON.stringify(data.user));
+        renderUser(data.user);
+        showToast('✅ Ingelogd', 'Welkom ' + data.user.name + '!');
+        if (isAdminUser(data.user)) {
+          await loadAdminUsers();
+        }
+      }
+
       authForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         const email = document.getElementById('authEmail').value.trim();
         const password = document.getElementById('authPassword').value;
         const name = document.getElementById('authName').value.trim();
-
         const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+
         try {
           const res = await fetch(API_BASE + endpoint, {
             method: 'POST',
@@ -805,29 +675,21 @@
             body: JSON.stringify({ email, password, name })
           });
           const data = await res.json();
-
           if (!res.ok || !data.ok) {
             if (data.needsVerification) {
               pendingVerifyEmail = email;
               verifyBox.style.display = 'block';
-              setFeedback(authFeedback, data.message || 'Verifieer eerst je e-mail.', true);
-            } else {
-              setFeedback(authFeedback, data.error || 'Inloggen mislukt', true);
             }
+            setFeedback(authFeedback, data.message || data.error || 'Inloggen mislukt', true);
             return;
           }
-
           if (data.needsVerification) {
             pendingVerifyEmail = email;
             verifyBox.style.display = 'block';
             setFeedback(authFeedback, data.message, false);
             return;
           }
-
-          localStorage.setItem('eggs_session_token', data.token);
-          localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
-          renderUser(data.user);
-          showToast('✅ Ingelogd', 'Welkom ' + data.user.name + '!');
+          await handleAuthSuccess(data);
         } catch (err) {
           setFeedback(authFeedback, 'Server niet bereikbaar.', true);
         }
@@ -847,11 +709,8 @@
             setFeedback(authFeedback, data.error || 'Code klopt niet', true);
             return;
           }
-          localStorage.setItem('eggs_session_token', data.token);
-          localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
           verifyBox.style.display = 'none';
-          renderUser(data.user);
-          showToast('✅ Geverifieerd', 'Welkom ' + data.user.name + '!');
+          await handleAuthSuccess(data);
         } catch (e) {
           setFeedback(authFeedback, 'Server niet bereikbaar.', true);
         }
@@ -867,10 +726,7 @@
           });
           const data = await res.json();
           if (res.ok && data.ok && data.user) {
-            localStorage.setItem('eggs_session_token', data.token);
-            localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
-            renderUser(data.user);
-            showToast('✅ Ingelogd met Google', 'Welkom ' + data.user.name + '!');
+            await handleAuthSuccess(data);
           } else {
             setFeedback(authFeedback, data.error || 'Google login mislukt', true);
           }
@@ -901,15 +757,7 @@
 
       function isAdminUser(user) {
         if (!user) return false;
-        const byEmail = user.email && user.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase();
-        const byRole = user.role === 'admin';
-        return byEmail || byRole;
-      }
-
-      function hasTreadmillAccess(user) {
-        if (!user) return false;
-        if (isAdminUser(user)) return true;
-        return Array.isArray(user.items) && user.items.includes('🏃 Admin Treadmill');
+        return (user.email && user.email.toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase()) || user.role === 'admin';
       }
 
       function updateTrailUI(user) {
@@ -919,95 +767,33 @@
 
         if (!user || (!hasAdminTrail && !hasSpeedTrail)) {
           trailSelectorSection.style.display = 'none';
-          activeTrailBadge.style.display = 'none';
           selectedTrail = 'none';
           return;
         }
 
         trailSelectorSection.style.display = 'block';
         activeTrailSelect.innerHTML = '<option value="none">Geen trail</option>';
-        if (hasAdminTrail) {
-          activeTrailSelect.innerHTML += '<option value="admin_trail">👑 Admin Trail (Goud)</option>';
-        }
-        if (hasSpeedTrail) {
-          activeTrailSelect.innerHTML += '<option value="speed_trail">⚡ Speed Trail (Turbo)</option>';
-        }
+        if (hasAdminTrail) activeTrailSelect.innerHTML += '<option value="admin_trail">👑 Admin Trail</option>';
+        if (hasSpeedTrail) activeTrailSelect.innerHTML += '<option value="speed_trail">⚡ Speed Trail</option>';
 
         if (selectedTrail === 'admin_trail' && !hasAdminTrail) selectedTrail = 'none';
         if (selectedTrail === 'speed_trail' && !hasSpeedTrail) selectedTrail = 'none';
-        if (selectedTrail === 'none' && hasAdminTrail) selectedTrail = 'admin_trail';
-        else if (selectedTrail === 'none' && hasSpeedTrail) selectedTrail = 'speed_trail';
-
         activeTrailSelect.value = selectedTrail;
         localStorage.setItem('eggs_selected_trail', selectedTrail);
-
-        if (selectedTrail === 'admin_trail') {
-          activeTrailBadge.textContent = '✨ Actief: 👑 Admin Trail';
-          activeTrailBadge.style.display = 'inline-block';
-        } else if (selectedTrail === 'speed_trail') {
-          activeTrailBadge.textContent = '✨ Actief: ⚡ Speed Trail';
-          activeTrailBadge.style.display = 'inline-block';
-        } else {
-          activeTrailBadge.style.display = 'none';
-        }
       }
 
-      activeTrailSelect.addEventListener('change', function () {
+      activeTrailSelect.addEventListener('change', () => {
         selectedTrail = activeTrailSelect.value;
         localStorage.setItem('eggs_selected_trail', selectedTrail);
-        updateTrailUI(currentUser);
-      });
-
-      function stopTreadmill() {
-        if (treadmillInterval) {
-          clearInterval(treadmillInterval);
-          treadmillInterval = null;
-        }
-        treadmillBelt.classList.remove('running');
-        treadmillToggleBtn.textContent = '▶ Start Admin Treadmill';
-        treadmillToggleBtn.className = 'btn btn-success';
-      }
-
-      treadmillToggleBtn.addEventListener('click', function () {
-        if (treadmillInterval) {
-          stopTreadmill();
-          return;
-        }
-        treadmillBelt.classList.add('running');
-        treadmillToggleBtn.textContent = '⏹ Stop Admin Treadmill';
-        treadmillToggleBtn.className = 'btn btn-danger';
-
-        treadmillInterval = setInterval(async function () {
-          const power = parseBigAmount(treadmillPower.value || '100');
-          const token = getToken();
-          if (!token) return;
-          try {
-            const res = await fetch(API_BASE + '/api/treadmill/tick', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-              },
-              body: JSON.stringify({ power })
-            });
-            const data = await res.json();
-            if (res.ok && data.ok && data.user) {
-              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
-              renderUser(data.user);
-            }
-          } catch (e) {}
-        }, 1000);
       });
 
       function renderUser(user) {
         currentUser = user;
         if (!user) {
-          stopTreadmill();
           updateTrailUI(null);
           loggedOutBox.style.display = 'block';
           loggedInBox.style.display = 'none';
           adminSection.style.display = 'none';
-          treadmillSection.style.display = 'none';
           return;
         }
 
@@ -1031,7 +817,7 @@
         if (items.length > 0) {
           userItemsWrap.style.display = 'block';
           userItemsList.innerHTML = '';
-          items.forEach(function (item) {
+          items.forEach((item) => {
             const chip = document.createElement('span');
             chip.className = 'item-chip';
             chip.textContent = item;
@@ -1042,11 +828,10 @@
         }
 
         updateTrailUI(user);
-        treadmillSection.style.display = hasTreadmillAccess(user) ? 'block' : 'none';
 
         if (isAdminUser(user)) {
           adminSection.style.display = 'block';
-          if (adminTarget.options.length <= 2) loadAdminUsers();
+          loadAdminUsers();
         } else {
           adminSection.style.display = 'none';
         }
@@ -1062,16 +847,19 @@
           if (res.ok) {
             const data = await res.json();
             if (data && data.ok && data.user) {
-              localStorage.setItem('eggs_google_user', JSON.stringify(data.user));
+              localStorage.setItem('eggs_user', JSON.stringify(data.user));
               renderUser(data.user);
             }
+          } else if (res.status === 401) {
+            setToken('');
+            renderUser(null);
           }
         } catch (e) {}
       }
 
-      logoutBtn.addEventListener('click', function () {
-        localStorage.removeItem('eggs_google_user');
-        localStorage.removeItem('eggs_session_token');
+      logoutBtn.addEventListener('click', () => {
+        setToken('');
+        localStorage.removeItem('eggs_user');
         if (window.google && window.google.accounts && window.google.accounts.id) {
           window.google.accounts.id.disableAutoSelect();
         }
@@ -1085,9 +873,8 @@
           const res = await fetch(API_BASE + '/api/admin/users', {
             headers: { 'Authorization': 'Bearer ' + token }
           });
-          if (!res.ok) return;
           const data = await res.json();
-          if (!data || !data.ok || !Array.isArray(data.users)) return;
+          if (!res.ok || !data.ok || !Array.isArray(data.users)) return;
 
           const prev = adminTarget.value;
           adminTarget.innerHTML = '';
@@ -1099,10 +886,10 @@
 
           const optAll = document.createElement('option');
           optAll.value = 'ALL';
-          optAll.textContent = '🌍 Iedereen (' + data.users.length + ' spelers)';
+          optAll.textContent = '🌍 Iedereen (' + data.users.length + ' accounts)';
           adminTarget.appendChild(optAll);
 
-          data.users.forEach(function (u) {
+          data.users.forEach((u) => {
             if (currentUser && u.id === currentUser.id) return;
             const opt = document.createElement('option');
             opt.value = u.id;
@@ -1116,16 +903,16 @@
         } catch (e) {}
       }
 
-      document.getElementById('adminRefreshUsersBtn').addEventListener('click', async function () {
-        setFeedback(adminFeedback, 'Spelerslijst vernieuwen...', false);
+      document.getElementById('adminRefreshUsersBtn').addEventListener('click', async () => {
+        setFeedback(adminFeedback, 'Lijst vernieuwen...', false);
         await loadAdminUsers();
         setFeedback(adminFeedback, '✅ Spelerslijst bijgewerkt!', false);
       });
 
-      document.getElementById('adminGiveBtn').addEventListener('click', async function () {
+      document.getElementById('adminGiveBtn').addEventListener('click', async () => {
         const token = getToken();
         if (!token) {
-          setFeedback(adminFeedback, '❌ Log eerst opnieuw in.', true);
+          setFeedback(adminFeedback, '❌ Geen geldige sessie. Log opnieuw in.', true);
           return;
         }
         const targetId = adminTarget.value === 'SELF' && currentUser ? currentUser.id : adminTarget.value;
@@ -1136,10 +923,11 @@
         const item = document.getElementById('giveCustomItem').value.trim() || document.getElementById('givePresetItem').value;
 
         if (diamonds === '0' && coins === '0' && speed === '0' && !role && !item) {
-          setFeedback(adminFeedback, '⚠️ Vul minstens één waarde of item in.', true);
+          setFeedback(adminFeedback, '⚠️ Vul een waarde of kies een item/rang.', true);
           return;
         }
 
+        setFeedback(adminFeedback, 'Bezig met versturen...', false);
         try {
           const res = await fetch(API_BASE + '/api/admin/give', {
             method: 'POST',
@@ -1164,11 +952,11 @@
             setFeedback(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
           }
         } catch (e) {
-          setFeedback(adminFeedback, '❌ Server niet bereikbaar.', true);
+          setFeedback(adminFeedback, '❌ Kan server niet bereiken.', true);
         }
       });
 
-      document.getElementById('adminAnnounceBtn').addEventListener('click', async function () {
+      document.getElementById('adminAnnounceBtn').addEventListener('click', async () => {
         const text = document.getElementById('adminAnnounceText').value.trim();
         if (!text) return;
         try {
@@ -1188,57 +976,18 @@
             setFeedback(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
           }
         } catch (e) {
-          setFeedback(adminFeedback, '❌ Server niet bereikbaar.', true);
+          setFeedback(adminFeedback, '❌ Kan server niet bereiken.', true);
         }
       });
 
-      async function checkServerHealth(wsUrl) {
-        try {
-          const res = await fetch(API_BASE + '/api/health');
-          if (res.ok) {
-            const data = await res.json();
-            const ch = '/' + wsUrl.split('/').pop();
-            const online = (data.channels && data.channels[ch]) ? data.channels[ch].online : 0;
-            serverStatus.textContent = '🟢 Online (' + online + ' spelers op dit kanaal)';
-            serverStatus.className = 'status online';
-            return;
-          }
-        } catch (e) {}
-        serverStatus.textContent = '🔴 Custom server niet bereikbaar';
-        serverStatus.className = 'status offline';
-      }
-
-      function loadGame() {
-        const ws = serverSelect.value;
-        const tables = tablesInput.value.trim() || '10';
-        localStorage.setItem('eggs_custom_server', ws);
-        localStorage.setItem('eggs_custom_tables', tables);
-        checkServerHealth(ws);
-
-        const url = BASE_GAME_URL +
-          '?timestables=' + encodeURIComponent(tables) +
-          '&lang=nl' +
-          '&multiplayer=' + encodeURIComponent(ws) +
-          '&swap=1' +
-          '&theme=' + encodeURIComponent(CONFIG.LOCKED_THEME);
-
-        gameSrc.setAttribute('data', url);
-      }
-
-      document.getElementById('applyBtn').addEventListener('click', function () {
-        loadGame();
-        toggleMenu(true);
-      });
-
       (async function init() {
-        const savedUser = localStorage.getItem('eggs_google_user');
-        if (savedUser) {
-          try { renderUser(JSON.parse(savedUser)); } catch (e) {}
+        const saved = localStorage.getItem('eggs_user');
+        if (saved) {
+          try { renderUser(JSON.parse(saved)); } catch (e) {}
         }
         await refreshMyProfile();
         initGoogleSignIn();
         connectSiteEvents();
-        loadGame();
       })();
     })();
   </script>
