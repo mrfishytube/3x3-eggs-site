@@ -3,311 +3,234 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>3x3 Eggs — Custom Game &amp; Admin</title>
+  <meta name="HandheldFriendly" content="true">
+  <title>3x3 Eggs 3D — Custom Data &amp; Admin</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; border: 0; }
     html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #0b162c;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       color: #f8fafc;
-      user-select: none;
     }
 
-    #gameCanvas {
-      display: block;
+    #gameSrc {
       width: 100%;
       height: 100%;
-      cursor: crosshair;
-    }
-
-    /* TOP HUD (echte in-game tellers) */
-    #topHud {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 50;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      pointer-events: none;
-    }
-    .hud-pill {
-      background: rgba(15, 23, 42, 0.9);
-      border: 2px solid #38bdf8;
-      border-radius: 999px;
-      padding: 6px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 800;
-      font-size: 0.92rem;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-      pointer-events: auto;
-    }
-    .hud-pill.gold { border-color: #f59e0b; color: #fde68a; }
-    .hud-pill.cyan { border-color: #38bdf8; color: #bae6fd; }
-    .hud-pill.green { border-color: #10b981; color: #a7f3d0; }
-    .hud-pill.rank-admin { border-color: #f59e0b; background: #f59e0b; color: #0f172a; }
-    .hud-pill.rank-vip { border-color: #a855f7; background: #a855f7; color: #fff; }
-    .hud-pill.rank-mod { border-color: #10b981; background: #10b981; color: #0f172a; }
-
-    /* LEFT QUICK BUTTONS (zoals in 3x3 Eggs) */
-    #leftBar {
-      position: fixed;
-      left: 12px;
-      top: 70px;
-      z-index: 60;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .side-btn {
-      width: 58px;
-      height: 58px;
-      border-radius: 14px;
-      border: 2px solid rgba(255,255,255,0.25);
-      background: rgba(15, 23, 42, 0.9);
-      color: #fff;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      transition: transform 0.12s, border-color 0.15s;
-    }
-    .side-btn span {
-      font-size: 0.62rem;
-      font-weight: 700;
-      margin-top: 2px;
-      color: #cbd5e1;
-    }
-    .side-btn:hover { transform: scale(1.06); border-color: #38bdf8; }
-    .side-btn.admin-btn {
-      background: linear-gradient(180deg, #f59e0b, #b45309);
-      border-color: #fde68a;
-      color: #0f172a;
-    }
-    .side-btn.admin-btn span { color: #0f172a; }
-    .side-btn.treadmill-btn {
-      background: linear-gradient(180deg, #10b981, #047857);
-      border-color: #6ee7b7;
-    }
-
-    /* BOTTOM CONTROLS HINT */
-    #bottomHint {
-      position: fixed;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 40;
-      background: rgba(15, 23, 42, 0.82);
-      border: 1px solid #334155;
-      border-radius: 999px;
-      padding: 6px 16px;
-      font-size: 0.78rem;
-      color: #cbd5e1;
-      pointer-events: none;
-    }
-
-    /* MODALS / DRAWER */
-    .modal-backdrop {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(2, 6, 23, 0.65);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal {
-      width: 100%;
-      max-width: 420px;
-      max-height: 88vh;
-      overflow-y: auto;
-      background: #1e293b;
-      border: 2px solid #334155;
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      display: block;
       position: relative;
+      z-index: 1;
     }
-    .modal.admin-modal { border-color: #f59e0b; background: linear-gradient(180deg, #1e1b4b, #0f172a); }
-    .modal-header {
+
+    #nav-toggle {
+      position: fixed;
+      left: 0;
+      top: 20px;
+      z-index: 1002;
+      background: rgba(37, 99, 235, 0.94);
+      color: #fff;
+      width: 46px;
+      height: 44px;
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
+      justify-content: center;
+      font-size: 20px;
+      transition: left 0.25s ease, background 0.2s;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.4);
     }
-    .modal-header h2 { font-size: 1.15rem; color: #38bdf8; }
-    .modal.admin-modal .modal-header h2 { color: #fbbf24; }
-    .close-btn {
-      background: #334155;
-      color: #fff;
-      border: none;
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 700;
+    #nav-toggle:hover { background: #1d4ed8; }
+    #nav-toggle.active {
+      left: 360px;
+      background: #ef4444;
     }
-    .close-btn:hover { background: #ef4444; }
 
-    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-    .tab-btn {
-      padding: 8px;
-      border-radius: 8px;
-      border: none;
-      background: #0f172a;
+    #mnu {
+      position: fixed;
+      top: 0;
+      left: -360px;
+      width: 360px;
+      height: 100%;
+      background: #1e293b;
+      z-index: 1001;
+      padding: 18px;
+      overflow-y: auto;
+      transition: left 0.25s ease;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.55);
+    }
+    #mnu.open { left: 0; }
+    #mnu h2 { font-size: 1.2rem; color: #38bdf8; margin-bottom: 12px; }
+    #mnu h3 {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       color: #94a3b8;
-      font-weight: 700;
-      cursor: pointer;
+      margin: 16px 0 8px;
     }
-    .tab-btn.active { background: #2563eb; color: #fff; }
 
-    .field { margin-bottom: 10px; }
-    .field label { display: block; font-size: 0.78rem; color: #cbd5e1; margin-bottom: 4px; }
-    .field input, .field select {
-      width: 100%;
-      padding: 9px 10px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #fff;
-      font-size: 0.88rem;
-    }
-    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-    .btn {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 700;
-      font-size: 0.88rem;
-      cursor: pointer;
-      margin-top: 6px;
-    }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-gold { background: #f59e0b; color: #0f172a; }
-    .btn-gold:hover { background: #d97706; }
-    .btn-success { background: #10b981; color: #0f172a; }
-    .btn-success:hover { background: #059669; color: #fff; }
-    .btn-danger { background: #dc2626; color: #fff; }
-    .btn-secondary { background: #334155; color: #fff; }
-
-    .feedback { margin-top: 8px; font-size: 0.82rem; min-height: 18px; color: #6ee7b7; }
-    .feedback.err { color: #fca5a5; }
-
-    .shop-card {
+    .card {
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 10px;
       padding: 12px;
       margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
     }
-    .shop-card button { width: auto; padding: 8px 14px; margin: 0; }
+    .admin-card {
+      background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .chip {
-      background: #0f172a;
-      border: 1px solid #475569;
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .tab-btn {
+      padding: 7px;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: #2563eb; color: #fff; }
+
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #38bdf8;
+    }
+    .user-name { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .user-email { font-size: 0.74rem; color: #94a3b8; }
+
+    .role-badge {
+      padding: 2px 7px;
       border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 0.78rem;
-      color: #fde68a;
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .role-admin { background: #f59e0b; color: #0f172a; }
+    .role-vip { background: #a855f7; color: #fff; }
+    .role-mod { background: #10b981; color: #0f172a; }
+    .role-player { background: #334155; color: #e2e8f0; }
+
+    .field { margin-bottom: 9px; text-align: left; }
+    .field label { display: block; font-size: 0.76rem; color: #cbd5e1; margin-bottom: 4px; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.84rem;
+      font-family: inherit;
+    }
+    .field textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      min-height: 120px;
+      resize: vertical;
     }
 
-    /* ANNOUNCEMENT BANNER & TOASTS */
-    #announceBanner {
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .btn {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-success { background: #10b981; color: #0f172a; }
+    .btn-gold { background: #f59e0b; color: #0f172a; }
+    .btn-gold:hover { background: #d97706; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-secondary { background: #334155; color: #fff; }
+
+    .feedback { margin-top: 8px; font-size: 0.78rem; min-height: 16px; color: #6ee7b7; word-break: break-word; }
+    .feedback.err { color: #fca5a5; }
+
+    .log-box {
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      max-height: 100px;
+      overflow-y: auto;
+      font-family: monospace;
+      margin-top: 8px;
+    }
+
+    #darkScreen {
       display: none;
       position: fixed;
-      top: 62px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 300;
-      background: linear-gradient(90deg, #b45309, #f59e0b, #b45309);
-      color: #0f172a;
-      font-weight: 800;
-      padding: 10px 22px;
-      border-radius: 999px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      max-width: 90vw;
-      text-align: center;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 1000;
     }
+    #darkScreen.visible { display: block; }
+
     #toastContainer {
       position: fixed;
-      top: 14px;
-      right: 14px;
-      z-index: 400;
+      top: 16px;
+      right: 16px;
+      z-index: 2000;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-width: 320px;
+      max-width: 340px;
       pointer-events: none;
     }
     .toast {
       background: rgba(15, 23, 42, 0.96);
       border: 1px solid #f59e0b;
       color: #fff;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border-radius: 10px;
       font-size: 0.84rem;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     }
     .toast strong { color: #fbbf24; }
   </style>
 </head>
 <body>
 
-  <canvas id="gameCanvas"></canvas>
-
-  <!-- TOP IN-GAME HUD -->
-  <div id="topHud">
-    <div class="hud-pill" id="hudRank">SPELER</div>
-    <div class="hud-pill gold">🪙 <span id="hudCoins">0</span></div>
-    <div class="hud-pill cyan">💎 <span id="hudDiamonds">0</span></div>
-    <div class="hud-pill green">⚡ <span id="hudSpeed">10</span></div>
-    <div class="hud-pill">👥 <span id="hudOnline">1</span></div>
-  </div>
-
-  <!-- LEFT IN-GAME ACTION BAR -->
-  <div id="leftBar">
-    <button class="side-btn" id="openAccountBtn" title="Account">👤<span>Account</span></button>
-    <button class="side-btn" id="openQuizBtn" title="3x3 Tafels">✖️<span>Tafels</span></button>
-    <button class="side-btn" id="openShopBtn" title="Eieren Shop">🥚<span>Eieren</span></button>
-    <button class="side-btn" id="openTrailsBtn" title="Trails">✨<span>Trails</span></button>
-    <button class="side-btn" id="openBagBtn" title="Backpack">🎒<span>Dieren</span></button>
-    <button class="side-btn treadmill-btn" id="openTreadmillBtn" style="display:none;" title="Admin Treadmill">🏃<span>Treadmill</span></button>
-    <button class="side-btn admin-btn" id="openAdminBtn" style="display:none;" title="Admin Panel">👑<span>Admin</span></button>
-  </div>
-
-  <div id="bottomHint">Loop met <strong>WASD / Pijltjes</strong> of klik op de grond • Ga op een <strong>Loopband</strong> staan om te trainen!</div>
-  <div id="announceBanner"></div>
+  <button id="nav-toggle" aria-label="Menu">☰</button>
+  <div id="darkScreen"></div>
   <div id="toastContainer"></div>
 
-  <!-- ACCOUNT MODAL -->
-  <div class="modal-backdrop" id="accountModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>👤 Account</h2>
-        <button class="close-btn" data-close="accountModal">✕</button>
-      </div>
+  <!-- JOUW ECHTE 3D GAME -->
+  <object
+    id="gameSrc"
+    scrolling="no"
+    height="100%"
+    width="100%"
+    frameborder="0"
+    allowfullscreen="true"
+    data="">
+  </object>
 
+  <nav id="mnu">
+    <h2>🥚 3x3 Eggs 3D</h2>
+
+    <h3>Account</h3>
+    <div class="card">
       <div id="loggedOutBox">
         <div class="tabs">
           <button type="button" class="tab-btn active" id="tabLogin">Inloggen</button>
@@ -329,7 +252,7 @@
           <button type="submit" class="btn btn-primary" id="authSubmitBtn">Inloggen</button>
         </form>
 
-        <div id="verifyBox" style="display:none; margin-top:10px;">
+        <div id="verifyBox" style="display:none; margin-top:8px;">
           <div class="field">
             <label for="verifyCodeInput">Verificatiecode</label>
             <input type="text" id="verifyCodeInput" placeholder="6-cijferige code">
@@ -338,197 +261,116 @@
         </div>
 
         <div id="authFeedback" class="feedback"></div>
-        <div style="text-align:center; font-size:0.75rem; color:#94a3b8; margin:10px 0 6px;">— of met Google —</div>
+        <div style="text-align:center; font-size:0.74rem; color:#64748b; margin:8px 0 4px;">— of met Google —</div>
         <div id="googleBtnContainer" style="display:flex; justify-content:center;"></div>
       </div>
 
       <div id="loggedInBox" style="display:none;">
-        <p style="font-size:0.95rem; font-weight:700;" id="accName"></p>
-        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:10px;" id="accEmail"></p>
-        <button type="button" class="btn btn-danger" id="logoutBtn">Uitloggen</button>
+        <div class="user-row">
+          <img id="userAvatar" class="user-avatar" src="" alt="">
+          <div>
+            <div class="user-name">
+              <span id="userName"></span>
+              <span id="userRoleBadge" class="role-badge role-player">SPELER</span>
+            </div>
+            <div id="userEmail" class="user-email"></div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger" id="logoutBtn" style="margin-top:10px;">Uitloggen</button>
       </div>
     </div>
-  </div>
 
-  <!-- ADMIN PANEL MODAL (VERANDERT LIVE IN-GAME DATA!) -->
-  <div class="modal-backdrop" id="adminModal">
-    <div class="modal admin-modal">
-      <div class="modal-header">
-        <h2>👑 Admin Panel (Live In-Game)</h2>
-        <button class="close-btn" data-close="adminModal">✕</button>
-      </div>
-
-      <div class="field">
-        <label for="adminTarget">Ontvanger</label>
-        <select id="adminTarget">
-          <option value="SELF">👑 Mezelf</option>
-          <option value="ALL">🌍 Iedereen</option>
-        </select>
-      </div>
-
-      <div class="row-2">
+    <!-- ADMIN PANEL VOOR DE 3D GAME CUSTOM DATA -->
+    <div id="adminSection" style="display:none;">
+      <h3 style="color:#fbbf24;">👑 3D Game Admin Panel</h3>
+      <div class="admin-card">
         <div class="field">
-          <label for="giveCoins">🪙 Munten</label>
-          <input type="text" inputmode="numeric" id="giveCoins" value="0" placeholder="bijv. 100000000000">
-        </div>
-        <div class="field">
-          <label for="giveDiamonds">💎 Diamanten</label>
-          <input type="text" inputmode="numeric" id="giveDiamonds" value="0">
-        </div>
-      </div>
-
-      <div class="row-2">
-        <div class="field">
-          <label for="giveSpeed">⚡ Snelheid</label>
-          <input type="text" inputmode="numeric" id="giveSpeed" value="0">
-        </div>
-        <div class="field">
-          <label for="giveRole">🏷️ In-Game Rang</label>
-          <select id="giveRole">
-            <option value="">Niet wijzigen</option>
-            <option value="player">Speler</option>
-            <option value="vip">VIP</option>
-            <option value="mod">Mod</option>
-            <option value="admin">Admin</option>
+          <label for="profile3dSelect">3D Speler (op jouw Custom Server)</label>
+          <select id="profile3dSelect">
+            <option value="ALL">🌍 Alle 3D spelers op deze server</option>
           </select>
         </div>
-      </div>
 
+        <div class="row-2">
+          <div class="field">
+            <label for="giveCoins">🪙 Munten (3D)</label>
+            <input type="text" inputmode="numeric" id="giveCoins" value="0" placeholder="100000000000">
+          </div>
+          <div class="field">
+            <label for="giveDiamonds">💎 Gems (3D)</label>
+            <input type="text" inputmode="numeric" id="giveDiamonds" value="0">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label for="giveSpeed">⚡ Snelheid (3D)</label>
+            <input type="text" inputmode="numeric" id="giveSpeed" value="0">
+          </div>
+          <div class="field">
+            <label for="giveRole">🏷️ Rang</label>
+            <select id="giveRole">
+              <option value="">Niet wijzigen</option>
+              <option value="player">Speler</option>
+              <option value="vip">VIP</option>
+              <option value="mod">Mod</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="givePresetItem">🎁 3D Item / Trail / Admin Treadmill</label>
+          <select id="givePresetItem">
+            <option value="">-- Kies item/trail (optioneel) --</option>
+            <option value="🏃 Admin Treadmill">🏃 Admin Treadmill</option>
+            <option value="👑 Admin Trail">👑 Admin Trail</option>
+            <option value="⚡ Speed Trail">⚡ Speed Trail</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-gold" id="adminGiveBtn">🎁 Pas 3D Data aan &amp; Herlaad 3D Game</button>
+        <button type="button" class="btn btn-secondary" id="adminRefreshBtn">🔄 Ververs 3D Spelers &amp; Data</button>
+
+        <hr style="border-top:1px solid #334155; margin:12px 0;">
+
+        <div class="field">
+          <label for="raw3dJson">🛠️ Directe 3D Save-Data Editor (JSON)</label>
+          <textarea id="raw3dJson" placeholder="Kies hierboven een 3D speler om zijn exacte save-data te bewerken..."></textarea>
+        </div>
+        <button type="button" class="btn btn-success" id="saveRawJsonBtn">💾 Opslaan &amp; 3D Game Herladen</button>
+
+        <div id="adminFeedback" class="feedback"></div>
+        <div id="adminLogs" class="log-box">Wachten op 3D game connectie...</div>
+      </div>
+    </div>
+
+    <h3>3D Game Server</h3>
+    <div class="card">
       <div class="field">
-        <label for="givePresetItem">🎁 Item / Trail / Admin Treadmill / Pet</label>
-        <select id="givePresetItem">
-          <option value="">-- Kies iets om in-game te geven --</option>
-          <option value="🏃 Admin Treadmill">🏃 Admin Treadmill (In-Game Loopband)</option>
-          <option value="👑 Admin Trail">👑 Admin Trail (Gouden Spoor)</option>
-          <option value="⚡ Speed Trail">⚡ Speed Trail (Bliksem Spoor)</option>
-          <option value="🥚 Gouden Ei">🥚 Gouden Ei (+250/s Pet)</option>
-          <option value="🐉 Regenboog Draak">🐉 Regenboog Draak (+2.500/s Pet)</option>
-          <option value="🐟 Mega Vis">🐟 Mega Vis (+10.000/s Pet)</option>
+        <label for="serverMode">Verbinding</label>
+        <select id="serverMode">
+          <option value="custom">🛠️ Mijn Custom Data Server (/server1)</option>
+          <option value="official">🌐 Originele Timestables Server</option>
         </select>
       </div>
-
       <div class="field">
-        <label for="giveCustomItem">Of typ een eigen item/pet-naam</label>
-        <input type="text" id="giveCustomItem" placeholder="Bijv. Ultra Kerst Ei">
+        <label for="tablesInput">Tafels (bijv. 10 of 1,2,5,10)</label>
+        <input type="text" id="tablesInput" value="10">
       </div>
-
-      <button type="button" class="btn btn-gold" id="adminGiveBtn">🎁 Geef direct in-game</button>
-      <button type="button" class="btn btn-secondary" id="adminRefreshBtn">🔄 Spelerslijst vernieuwen</button>
-
-      <hr style="border-top:1px solid #334155; margin:12px 0;">
-
-      <div class="field">
-        <label for="adminAnnounceText">📢 Server-melding in beeld</label>
-        <input type="text" id="adminAnnounceText" placeholder="Bericht voor alle spelers...">
-      </div>
-      <button type="button" class="btn btn-primary" id="adminAnnounceBtn">📢 Verstuur melding</button>
-
-      <div id="adminFeedback" class="feedback"></div>
+      <button type="button" class="btn btn-primary" id="applyBtn">3D Game Herladen</button>
+      <button type="button" class="btn btn-secondary" id="fsBtn">⛶ Volledig scherm</button>
     </div>
-  </div>
-
-  <!-- ADMIN TREADMILL MODAL -->
-  <div class="modal-backdrop" id="treadmillModal">
-    <div class="modal" style="border-color:#10b981;">
-      <div class="modal-header">
-        <h2 style="color:#34d399;">🏃 Admin Treadmill</h2>
-        <button class="close-btn" data-close="treadmillModal">✕</button>
-      </div>
-      <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:10px;">
-        Zet de Admin Treadmill aan om automatisch Snelheid (⚡) en Munten (🪙) in het spel te trainen — of loop op de gouden loopband in de wereld!
-      </p>
-      <div class="field">
-        <label for="treadmillPower">Train-snelheid</label>
-        <select id="treadmillPower">
-          <option value="500">⚡ Turbo (+500⚡ &amp; +1.000🪙 / sec)</option>
-          <option value="5000">👑 Admin Ultra (+5.000⚡ &amp; +10.000🪙 / sec)</option>
-          <option value="100000">🚀 God Speed (+100.000⚡ &amp; +200.000🪙 / sec)</option>
-        </select>
-      </div>
-      <button type="button" class="btn btn-success" id="toggleAutoTreadBtn">▶ Start Auto Admin Treadmill</button>
-    </div>
-  </div>
-
-  <!-- TRAILS MODAL -->
-  <div class="modal-backdrop" id="trailsModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>✨ In-Game Trails</h2>
-        <button class="close-btn" data-close="trailsModal">✕</button>
-      </div>
-      <p style="font-size:0.84rem; color:#cbd5e1; margin-bottom:10px;">
-        Kies welke trail er achter jouw speler verschijnt tijdens het lopen in het spel:
-      </p>
-      <div class="field">
-        <select id="trailSelect">
-          <option value="none">Geen trail</option>
-        </select>
-      </div>
-      <button type="button" class="btn btn-primary" id="saveTrailBtn">Opslaan</button>
-      <div id="trailFeedback" class="feedback"></div>
-    </div>
-  </div>
-
-  <!-- EGG SHOP MODAL -->
-  <div class="modal-backdrop" id="shopModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>🥚 Eieren Shop</h2>
-        <button class="close-btn" data-close="shopModal">✕</button>
-      </div>
-      <div class="shop-card">
-        <div><strong>🥚 Basis Winter Ei</strong><br><small style="color:#94a3b8;">Konijn of Pinguïn (+15–30 🪙/s)</small></div>
-        <button class="btn btn-gold" data-buy="basic">100 🪙</button>
-      </div>
-      <div class="shop-card">
-        <div><strong>🌟 Gouden Ei</strong><br><small style="color:#94a3b8;">Gouden Vos of Uil (+150–300 🪙/s)</small></div>
-        <button class="btn btn-gold" data-buy="gold">1.000 🪙</button>
-      </div>
-      <div class="shop-card">
-        <div><strong>🐉 Mythisch Ei</strong><br><small style="color:#94a3b8;">Draak of Eenhoorn (+2.500–4.000 🪙/s)</small></div>
-        <button class="btn btn-gold" data-buy="mythic">25.000 🪙</button>
-      </div>
-      <div id="shopFeedback" class="feedback"></div>
-    </div>
-  </div>
-
-  <!-- BACKPACK / DIERENHOK MODAL -->
-  <div class="modal-backdrop" id="bagModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>🎒 Dierenhok &amp; Items</h2>
-        <button class="close-btn" data-close="bagModal">✕</button>
-      </div>
-      <p style="font-size:0.82rem; color:#94a3b8;">Jouw dieren verdienen automatisch munten in jouw dierenhok:</p>
-      <div id="petsList" class="chips"></div>
-      <p style="font-size:0.82rem; color:#94a3b8; margin-top:14px;">Jouw items &amp; trails:</p>
-      <div id="itemsList" class="chips"></div>
-    </div>
-  </div>
-
-  <!-- 3x3 TAFELS QUIZ MODAL -->
-  <div class="modal-backdrop" id="quizModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2>✖️ 3x3 Tafels Quiz</h2>
-        <button class="close-btn" data-close="quizModal">✕</button>
-      </div>
-      <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:10px;">Los de som op en verdien direct Munten + 5 Diamanten!</p>
-      <div id="quizQuestion" style="font-size:2rem; font-weight:800; text-align:center; margin:12px 0; color:#fde68a;">3 × 3 = ?</div>
-      <div class="field">
-        <input type="number" id="quizAnswer" placeholder="Jouw antwoord...">
-      </div>
-      <button type="button" class="btn btn-success" id="quizSubmitBtn">Antwoord controleren</button>
-      <div id="quizFeedback" class="feedback"></div>
-    </div>
-  </div>
+  </nav>
 
   <script>
     (function () {
       const CONFIG = {
         GOOGLE_CLIENT_ID: '733831869974-7bk289e7hdhu8uf6sjvcgl3db4h0o3gg.apps.googleusercontent.com',
-        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com'
+        ADMIN_EMAIL: 'mr.fish.ytube@gmail.com',
+        LOCKED_THEME: 'winter'
       };
+      const BASE_GAME_URL = 'https://www.timestables.com/gf/3x3-steal-egg/20261127-1019/index.html';
       const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:')
         ? window.location.origin
         : 'http://localhost:3000';
@@ -539,150 +381,100 @@
         if (!cleaned || cleaned === '-') return '0';
         try { return BigInt(cleaned).toString(); } catch (e) { return '0'; }
       }
-      function fmtBig(val) {
-        const str = parseBig(val);
-        const neg = str.startsWith('-');
-        const digits = neg ? str.slice(1) : str;
-        return (neg ? '-' : '') + digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      }
 
-      // STATE
+      const navToggle = document.getElementById('nav-toggle');
+      const mnu = document.getElementById('mnu');
+      const darkScreen = document.getElementById('darkScreen');
+      const gameSrc = document.getElementById('gameSrc');
+      const serverMode = document.getElementById('serverMode');
+      const tablesInput = document.getElementById('tablesInput');
+      const toastContainer = document.getElementById('toastContainer');
+      const authFeedback = document.getElementById('authFeedback');
+      const adminFeedback = document.getElementById('adminFeedback');
+      const profile3dSelect = document.getElementById('profile3dSelect');
+      const raw3dJson = document.getElementById('raw3dJson');
+      const adminLogs = document.getElementById('adminLogs');
+
       let currentUser = null;
       let authMode = 'login';
       let pendingVerifyEmail = '';
-      let ws = null;
-      let otherPlayers = new Map();
-      let autoTreadTimer = null;
+      let cachedProfiles = [];
+      let eventWs = null;
 
-      // PLAYER POSITION IN WORLD
-      const player = { x: 450, y: 340, targetX: null, targetY: null };
-      const keys = {};
-      const trailParticles = [];
-      const snowflakes = Array.from({ length: 70 }, () => ({
-        x: Math.random() * 1600,
-        y: Math.random() * 1000,
-        r: 1.5 + Math.random() * 2.5,
-        vy: 0.6 + Math.random() * 1.1
-      }));
-
-      // WORLD ZONES
-      const ZONES = {
-        pen: { x: 140, y: 180, w: 220, h: 170, label: '🐾 Dierenhok' },
-        normalTreadmill: { x: 440, y: 180, w: 150, h: 80, label: '🏃 Loopband' },
-        adminTreadmill: { x: 630, y: 180, w: 170, h: 80, label: '👑 Admin Treadmill' },
-        eggShop: { x: 480, y: 420, w: 180, h: 90, label: '🥚 Eieren Shop' }
-      };
-
-      function getToken() { return localStorage.getItem('eggs_v8_token') || ''; }
+      function getToken() { return localStorage.getItem('eggs_v9_token') || ''; }
       function setToken(t) {
-        if (t) localStorage.setItem('eggs_v8_token', t);
-        else localStorage.removeItem('eggs_v8_token');
+        if (t) localStorage.setItem('eggs_v9_token', t);
+        else localStorage.removeItem('eggs_v9_token');
       }
       function isAdmin(u) {
         return Boolean(u && ((u.email || '').toLowerCase() === CONFIG.ADMIN_EMAIL.toLowerCase() || u.role === 'admin'));
       }
-
+      function setFb(el, txt, err) {
+        el.textContent = txt;
+        el.className = err ? 'feedback err' : 'feedback';
+      }
       function showToast(title, body) {
         const el = document.createElement('div');
         el.className = 'toast';
         el.innerHTML = '<strong>' + title + '</strong><br>' + body;
-        document.getElementById('toastContainer').appendChild(el);
-        setTimeout(() => el.remove(), 5000);
+        toastContainer.appendChild(el);
+        setTimeout(() => el.remove(), 5500);
       }
 
-      function showBanner(text) {
-        const b = document.getElementById('announceBanner');
-        b.textContent = '📢 ' + text;
-        b.style.display = 'block';
-        clearTimeout(b._t);
-        b._t = setTimeout(() => { b.style.display = 'none'; }, 7000);
+      function toggleMenu(forceClose) {
+        const open = forceClose ? false : !mnu.classList.contains('open');
+        mnu.classList.toggle('open', open);
+        navToggle.classList.toggle('active', open);
+        darkScreen.classList.toggle('visible', open);
+        navToggle.textContent = open ? '✕' : '☰';
+        if (open && isAdmin(currentUser)) loadAdminState();
       }
-
-      function openModal(id) { document.getElementById(id).classList.add('open'); }
-      function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-      document.querySelectorAll('[data-close]').forEach((btn) => {
-        btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
-      });
-      document.querySelectorAll('.modal-backdrop').forEach((bg) => {
-        bg.addEventListener('click', (e) => { if (e.target === bg) bg.classList.remove('open'); });
+      navToggle.addEventListener('click', () => toggleMenu());
+      darkScreen.addEventListener('click', () => toggleMenu(true));
+      document.getElementById('fsBtn').addEventListener('click', () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen().catch(() => {});
+        toggleMenu(true);
       });
 
-      document.getElementById('openAccountBtn').addEventListener('click', () => openModal('accountModal'));
-      document.getElementById('openAdminBtn').addEventListener('click', () => { loadAdminUsers(); openModal('adminModal'); });
-      document.getElementById('openTreadmillBtn').addEventListener('click', () => openModal('treadmillModal'));
-      document.getElementById('openTrailsBtn').addEventListener('click', () => { updateTrailSelect(); openModal('trailsModal'); });
-      document.getElementById('openShopBtn').addEventListener('click', () => openModal('shopModal'));
-      document.getElementById('openBagBtn').addEventListener('click', () => openModal('bagModal'));
-      document.getElementById('openQuizBtn').addEventListener('click', () => { nextQuiz(); openModal('quizModal'); });
+      // ============================================================
+      // 3D GAME LADEN
+      // ============================================================
+      serverMode.value = localStorage.getItem('eggs_v9_mode') || 'custom';
+      tablesInput.value = localStorage.getItem('eggs_v9_tables') || '10';
 
-      // ============================================================
-      // RENDER USER -> UPDATES LIVE IN-GAME HUD & BUTTONS
-      // ============================================================
-      function applyUser(u) {
-        currentUser = u;
-        const hudRank = document.getElementById('hudRank');
-        if (!u) {
-          hudRank.textContent = 'GAST';
-          hudRank.className = 'hud-pill';
-          document.getElementById('hudCoins').textContent = '0';
-          document.getElementById('hudDiamonds').textContent = '0';
-          document.getElementById('hudSpeed').textContent = '10';
-          document.getElementById('loggedOutBox').style.display = 'block';
-          document.getElementById('loggedInBox').style.display = 'none';
-          document.getElementById('openAdminBtn').style.display = 'none';
-          document.getElementById('openTreadmillBtn').style.display = 'none';
-          return;
+      function load3DGame() {
+        const mode = serverMode.value;
+        const tables = tablesInput.value.trim() || '10';
+        localStorage.setItem('eggs_v9_mode', mode);
+        localStorage.setItem('eggs_v9_tables', tables);
+
+        let url = BASE_GAME_URL +
+          '?timestables=' + encodeURIComponent(tables) +
+          '&lang=nl&swap=1&theme=' + encodeURIComponent(CONFIG.LOCKED_THEME) +
+          '&r=' + Date.now();
+
+        if (mode === 'custom') {
+          url += '&multiplayer=' + encodeURIComponent(WS_BASE + '/server1');
         }
-
-        const role = isAdmin(u) ? 'admin' : (u.role || 'player');
-        hudRank.textContent = role.toUpperCase() + ' • ' + u.name;
-        hudRank.className = 'hud-pill rank-' + role;
-        document.getElementById('hudCoins').textContent = fmtBig(u.coins);
-        document.getElementById('hudDiamonds').textContent = fmtBig(u.diamonds);
-        document.getElementById('hudSpeed').textContent = fmtBig(u.speed);
-
-        document.getElementById('loggedOutBox').style.display = 'none';
-        document.getElementById('loggedInBox').style.display = 'block';
-        document.getElementById('accName').textContent = u.name + ' [' + role.toUpperCase() + ']';
-        document.getElementById('accEmail').textContent = u.email;
-
-        document.getElementById('openAdminBtn').style.display = isAdmin(u) ? 'flex' : 'none';
-        const hasAdminTread = isAdmin(u) || u.hasAdminTreadmill || (u.items || []).includes('🏃 Admin Treadmill');
-        document.getElementById('openTreadmillBtn').style.display = hasAdminTread ? 'flex' : 'none';
-
-        // Backpack
-        const petsList = document.getElementById('petsList');
-        petsList.innerHTML = '';
-        (u.pets || []).forEach((p) => {
-          const c = document.createElement('span');
-          c.className = 'chip';
-          c.textContent = `${p.emoji || '🥚'} ${p.name} (+${fmtBig(p.income || '5')} 🪙/s)`;
-          petsList.appendChild(c);
-        });
-        const itemsList = document.getElementById('itemsList');
-        itemsList.innerHTML = '';
-        (u.items || []).forEach((it) => {
-          const c = document.createElement('span');
-          c.className = 'chip';
-          c.textContent = it;
-          itemsList.appendChild(c);
-        });
+        gameSrc.setAttribute('data', url);
       }
 
-      // ============================================================
-      // AUTH (CUSTOM EMAIL + @ll.flevion.nl + GOOGLE)
-      // ============================================================
-      const authFb = document.getElementById('authFeedback');
-      function setFb(el, txt, err) { el.textContent = txt; el.className = err ? 'feedback err' : 'feedback'; }
+      document.getElementById('applyBtn').addEventListener('click', () => {
+        load3DGame();
+        toggleMenu(true);
+      });
 
+      // ============================================================
+      // AUTH
+      // ============================================================
       document.getElementById('tabLogin').addEventListener('click', () => {
         authMode = 'login';
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('tabRegister').classList.remove('active');
         document.getElementById('nameField').style.display = 'none';
         document.getElementById('authSubmitBtn').textContent = 'Inloggen';
-        setFb(authFb, '', false);
+        setFb(authFeedback, '', false);
       });
       document.getElementById('tabRegister').addEventListener('click', () => {
         authMode = 'register';
@@ -690,15 +482,34 @@
         document.getElementById('tabLogin').classList.remove('active');
         document.getElementById('nameField').style.display = 'block';
         document.getElementById('authSubmitBtn').textContent = 'Account aanmaken';
-        setFb(authFb, '', false);
+        setFb(authFeedback, '', false);
       });
 
-      function onLoginSuccess(data) {
-        setToken(data.token);
-        applyUser(data.user);
-        connectWS();
-        closeModal('accountModal');
-        showToast('✅ Ingelogd!', 'Welkom ' + data.user.name);
+      function renderUser(u) {
+        currentUser = u;
+        if (!u) {
+          document.getElementById('loggedOutBox').style.display = 'block';
+          document.getElementById('loggedInBox').style.display = 'none';
+          document.getElementById('adminSection').style.display = 'none';
+          return;
+        }
+        document.getElementById('loggedOutBox').style.display = 'none';
+        document.getElementById('loggedInBox').style.display = 'block';
+        document.getElementById('userName').textContent = u.name || 'Speler';
+        document.getElementById('userEmail').textContent = u.email || '';
+        const letter = (u.name || 'S').charAt(0).toUpperCase();
+        document.getElementById('userAvatar').src = u.picture || ('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="%232563eb"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif">' + encodeURIComponent(letter) + '</text></svg>');
+        const role = isAdmin(u) ? 'admin' : (u.role || 'player');
+        const badge = document.getElementById('userRoleBadge');
+        badge.textContent = role.toUpperCase();
+        badge.className = 'role-badge role-' + role;
+
+        if (isAdmin(u)) {
+          document.getElementById('adminSection').style.display = 'block';
+          loadAdminState();
+        } else {
+          document.getElementById('adminSection').style.display = 'none';
+        }
       }
 
       document.getElementById('authForm').addEventListener('submit', async (e) => {
@@ -707,31 +518,27 @@
         const password = document.getElementById('authPassword').value;
         const name = document.getElementById('authName').value.trim();
         const ep = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-        try {
-          const res = await fetch(API_BASE + ep, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, name })
-          });
-          const data = await res.json();
-          if (!res.ok || !data.ok) {
-            if (data.needsVerification) {
-              pendingVerifyEmail = email;
-              document.getElementById('verifyBox').style.display = 'block';
-            }
-            setFb(authFb, data.message || data.error || 'Mislukt', true);
-            return;
-          }
+        const res = await fetch(API_BASE + ep, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
           if (data.needsVerification) {
             pendingVerifyEmail = email;
             document.getElementById('verifyBox').style.display = 'block';
-            setFb(authFb, data.message, false);
-            return;
           }
-          onLoginSuccess(data);
-        } catch (err) {
-          setFb(authFb, 'Server niet bereikbaar.', true);
+          return setFb(authFeedback, data.message || data.error || 'Mislukt', true);
         }
+        if (data.needsVerification) {
+          pendingVerifyEmail = email;
+          document.getElementById('verifyBox').style.display = 'block';
+          return setFb(authFeedback, data.message, false);
+        }
+        setToken(data.token);
+        renderUser(data.user);
+        showToast('✅ Ingelogd', 'Welkom ' + data.user.name);
       });
 
       document.getElementById('verifySubmitBtn').addEventListener('click', async () => {
@@ -742,15 +549,15 @@
           body: JSON.stringify({ email: pendingVerifyEmail, code })
         });
         const data = await res.json();
-        if (!res.ok || !data.ok) return setFb(authFb, data.error || 'Code fout', true);
+        if (!res.ok || !data.ok) return setFb(authFeedback, data.error || 'Code fout', true);
         document.getElementById('verifyBox').style.display = 'none';
-        onLoginSuccess(data);
+        setToken(data.token);
+        renderUser(data.user);
       });
 
       document.getElementById('logoutBtn').addEventListener('click', () => {
         setToken('');
-        applyUser(null);
-        stopAutoTread();
+        renderUser(null);
       });
 
       function initGoogle() {
@@ -765,8 +572,13 @@
                 body: JSON.stringify({ credential: resp.credential })
               });
               const data = await res.json();
-              if (res.ok && data.ok) onLoginSuccess(data);
-              else setFb(authFb, data.error || 'Google login mislukt', true);
+              if (res.ok && data.ok) {
+                setToken(data.token);
+                renderUser(data.user);
+                showToast('✅ Ingelogd met Google', 'Welkom ' + data.user.name);
+              } else {
+                setFb(authFeedback, data.error || 'Google login mislukt', true);
+              }
             }
           });
           window.google.accounts.id.renderButton(document.getElementById('googleBtnContainer'), {
@@ -778,491 +590,143 @@
       }
 
       // ============================================================
-      // ADMIN PANEL (LIVE IN-GAME DATA)
+      // ADMIN PANEL -> 3D GAME DATA
       // ============================================================
-      const adminFb = document.getElementById('adminFeedback');
-      async function loadAdminUsers() {
+      async function loadAdminState() {
         const token = getToken();
         if (!token) return;
-        const res = await fetch(API_BASE + '/api/admin/users', { headers: { Authorization: 'Bearer ' + token } });
-        const data = await res.json();
-        if (!res.ok || !data.ok) return;
-        const sel = document.getElementById('adminTarget');
-        const prev = sel.value;
-        sel.innerHTML = '';
-        sel.innerHTML += `<option value="SELF">👑 Mezelf (${currentUser ? currentUser.email : ''})</option>`;
-        sel.innerHTML += `<option value="ALL">🌍 Iedereen (${data.users.length} spelers)</option>`;
-        data.users.forEach((u) => {
-          if (currentUser && u.id === currentUser.id) return;
-          const opt = document.createElement('option');
-          opt.value = u.id;
-          opt.textContent = `${u.name} [${(u.role || 'player').toUpperCase()}] (${u.email})`;
-          sel.appendChild(opt);
-        });
-        if (Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+        try {
+          const res = await fetch(API_BASE + '/api/admin/state', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) return;
+
+          cachedProfiles = data.gameProfiles || [];
+          const prev = profile3dSelect.value;
+          profile3dSelect.innerHTML = `<option value="ALL">🌍 Alle 3D spelers (${cachedProfiles.length})</option>`;
+          cachedProfiles.forEach((p) => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `🎮 3D ID: ${p.id}`;
+            profile3dSelect.appendChild(opt);
+          });
+
+          if (Array.from(profile3dSelect.options).some(o => o.value === prev)) {
+            profile3dSelect.value = prev;
+          } else if (cachedProfiles.length > 0) {
+            profile3dSelect.value = cachedProfiles[0].id;
+          }
+
+          syncJsonEditor();
+          adminLogs.textContent = (data.logs && data.logs.length) ? data.logs.join('\n') : 'Nog geen 3D data ontvangen...';
+        } catch (e) {}
       }
 
+      function syncJsonEditor() {
+        const sel = profile3dSelect.value;
+        const found = cachedProfiles.find(p => p.id === sel) || cachedProfiles[0];
+        if (found) {
+          raw3dJson.value = JSON.stringify(found.data || {}, null, 2);
+        } else {
+          raw3dJson.value = '';
+        }
+      }
+      profile3dSelect.addEventListener('change', syncJsonEditor);
+
       document.getElementById('adminRefreshBtn').addEventListener('click', async () => {
-        await loadAdminUsers();
-        setFb(adminFb, '✅ Spelerslijst bijgewerkt!', false);
+        await loadAdminState();
+        setFb(adminFeedback, '✅ 3D Spelers & data ververst!', false);
       });
 
       document.getElementById('adminGiveBtn').addEventListener('click', async () => {
         const token = getToken();
-        if (!token) return setFb(adminFb, '❌ Log eerst in.', true);
-        const selVal = document.getElementById('adminTarget').value;
-        const targetId = selVal === 'SELF' && currentUser ? currentUser.id : selVal;
+        if (!token) return setFb(adminFeedback, '❌ Log eerst in.', true);
+        const targetId = profile3dSelect.value || 'ALL';
         const coins = parseBig(document.getElementById('giveCoins').value);
         const diamonds = parseBig(document.getElementById('giveDiamonds').value);
         const speed = parseBig(document.getElementById('giveSpeed').value);
         const role = document.getElementById('giveRole').value;
-        const item = document.getElementById('giveCustomItem').value.trim() || document.getElementById('givePresetItem').value;
+        const item = document.getElementById('givePresetItem').value;
 
         if (coins === '0' && diamonds === '0' && speed === '0' && !role && !item) {
-          return setFb(adminFb, '⚠️ Vul een bedrag in of kies een item/rang.', true);
+          return setFb(adminFeedback, '⚠️ Vul een waarde of item in.', true);
         }
 
         const res = await fetch(API_BASE + '/api/admin/give', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ targetId, coins, diamonds, speed, role, item })
+          body: JSON.stringify({ targetType: '3D', targetId, coins, diamonds, speed, role, item })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          setFb(adminFb, '✅ In-game gegeven: ' + data.summary, false);
+          setFb(adminFeedback, `✅ Aangepast (${data.updated3DCount} 3D profiel): ${data.summary}`, false);
           document.getElementById('giveCoins').value = '0';
           document.getElementById('giveDiamonds').value = '0';
           document.getElementById('giveSpeed').value = '0';
           document.getElementById('giveRole').value = '';
           document.getElementById('givePresetItem').value = '';
-          document.getElementById('giveCustomItem').value = '';
-          if (data.user) applyUser(data.user);
-          await loadAdminUsers();
+          await loadAdminState();
+          // Herlaad 3D game zodat hij direct de aangepaste custom progress van onze server ophaalt!
+          load3DGame();
         } else {
-          setFb(adminFb, '❌ ' + (data.error || 'Mislukt'), true);
+          setFb(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
         }
       });
 
-      document.getElementById('adminAnnounceBtn').addEventListener('click', async () => {
-        const text = document.getElementById('adminAnnounceText').value.trim();
-        if (!text) return;
-        const res = await fetch(API_BASE + '/api/admin/announce', {
+      document.getElementById('saveRawJsonBtn').addEventListener('click', async () => {
+        const sel = profile3dSelect.value;
+        const found = cachedProfiles.find(p => p.id === sel) || cachedProfiles[0];
+        if (!found) return setFb(adminFeedback, '❌ Nog geen 3D speler-ID gedetecteerd.', true);
+        let parsed = null;
+        try { parsed = JSON.parse(raw3dJson.value); } catch (e) {
+          return setFb(adminFeedback, '❌ Ongeldige JSON syntax.', true);
+        }
+        const res = await fetch(API_BASE + '/api/admin/save-3d-json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ text })
-        });
-        if (res.ok) {
-          document.getElementById('adminAnnounceText').value = '';
-          setFb(adminFb, '✅ Melding verstuurd!', false);
-        }
-      });
-
-      // ============================================================
-      // TRAILS, TREADMILL, SHOP, QUIZ
-      // ============================================================
-      function updateTrailSelect() {
-        const sel = document.getElementById('trailSelect');
-        sel.innerHTML = '<option value="none">Geen trail</option>';
-        const items = (currentUser && currentUser.items) || [];
-        if (isAdmin(currentUser) || items.includes('👑 Admin Trail')) {
-          sel.innerHTML += '<option value="admin_trail">👑 Admin Trail (Goud)</option>';
-        }
-        if (isAdmin(currentUser) || items.includes('⚡ Speed Trail')) {
-          sel.innerHTML += '<option value="speed_trail">⚡ Speed Trail (Bliksem)</option>';
-        }
-        if (currentUser) sel.value = currentUser.activeTrail || 'none';
-      }
-
-      document.getElementById('saveTrailBtn').addEventListener('click', async () => {
-        if (!currentUser) return;
-        const trail = document.getElementById('trailSelect').value;
-        const res = await fetch(API_BASE + '/api/game/action', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ action: 'set_trail', trail })
+          body: JSON.stringify({ profileId: found.id, data: parsed })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
-          applyUser(data.user);
-          setFb(document.getElementById('trailFeedback'), '✅ Trail actief in-game!', false);
+          setFb(adminFeedback, '✅ 3D JSON opgeslagen & spel herladen!', false);
+          await loadAdminState();
+          load3DGame();
         } else {
-          setFb(document.getElementById('trailFeedback'), '❌ ' + (data.error || 'Mislukt'), true);
+          setFb(adminFeedback, '❌ ' + (data.error || 'Mislukt'), true);
         }
       });
 
-      async function doTreadmillTick(adminTreadmill, power) {
-        if (!currentUser) return;
-        const res = await fetch(API_BASE + '/api/game/action', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ action: 'treadmill', adminTreadmill, power })
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) applyUser(data.user);
-      }
-
-      function stopAutoTread() {
-        if (autoTreadTimer) { clearInterval(autoTreadTimer); autoTreadTimer = null; }
-        const btn = document.getElementById('toggleAutoTreadBtn');
-        btn.textContent = '▶ Start Auto Admin Treadmill';
-        btn.className = 'btn btn-success';
-      }
-
-      document.getElementById('toggleAutoTreadBtn').addEventListener('click', () => {
-        if (autoTreadTimer) return stopAutoTread();
-        const btn = document.getElementById('toggleAutoTreadBtn');
-        btn.textContent = '⏹ Stop Auto Admin Treadmill';
-        btn.className = 'btn btn-danger';
-        autoTreadTimer = setInterval(() => {
-          const pwr = document.getElementById('treadmillPower').value;
-          doTreadmillTick(true, pwr);
-        }, 1000);
-      });
-
-      document.querySelectorAll('[data-buy]').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          if (!currentUser) return openModal('accountModal');
-          const res = await fetch(API_BASE + '/api/game/action', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-            body: JSON.stringify({ action: 'buy_egg', tier: btn.getAttribute('data-buy') })
-          });
-          const data = await res.json();
-          const fb = document.getElementById('shopFeedback');
-          if (res.ok && data.ok) {
-            applyUser(data.user);
-            setFb(fb, `🎉 Uitgebroed: ${data.hatched.emoji} ${data.hatched.name}!`, false);
-          } else {
-            setFb(fb, '❌ ' + (data.error || 'Mislukt'), true);
-          }
-        });
-      });
-
-      let quizA = 3, quizB = 3;
-      function nextQuiz() {
-        quizA = Math.floor(2 + Math.random() * 9);
-        quizB = Math.floor(2 + Math.random() * 9);
-        document.getElementById('quizQuestion').textContent = `${quizA} × ${quizB} = ?`;
-        document.getElementById('quizAnswer').value = '';
-        setFb(document.getElementById('quizFeedback'), '', false);
-      }
-      document.getElementById('quizSubmitBtn').addEventListener('click', async () => {
-        const ans = parseInt(document.getElementById('quizAnswer').value, 10);
-        const fb = document.getElementById('quizFeedback');
-        if (ans !== quizA * quizB) return setFb(fb, '❌ Probeer opnieuw!', true);
-        if (!currentUser) {
-          setFb(fb, '✅ Goed! Log in om beloningen op te slaan.', false);
-          return setTimeout(nextQuiz, 700);
-        }
-        const res = await fetch(API_BASE + '/api/game/action', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ action: 'quiz_reward' })
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          applyUser(data.user);
-          setFb(fb, `✅ Goed! +${data.reward} 🪙 & +5 💎`, false);
-          setTimeout(nextQuiz, 800);
-        }
-      });
-
-      // ============================================================
-      // WEBSOCKET MULTIPLAYER
-      // ============================================================
-      function connectWS() {
+      function connectEvents() {
         try {
-          if (ws) ws.close();
-          ws = new WebSocket(WS_BASE);
-          ws.onopen = () => {
-            ws.send(JSON.stringify({
-              type: 'join',
-              token: getToken(),
-              x: player.x,
-              y: player.y
-            }));
-          };
-          ws.onmessage = (ev) => {
+          if (eventWs) eventWs.close();
+          eventWs = new WebSocket(WS_BASE + '/site-events');
+          eventWs.onmessage = (ev) => {
             let msg = null;
             try { msg = JSON.parse(ev.data); } catch (e) { return; }
-            if (msg.type === 'profile_sync' && msg.user) {
-              applyUser(msg.user);
+            if (msg.type === 'profiles_changed' && isAdmin(currentUser)) {
+              loadAdminState();
             } else if (msg.type === 'gift') {
-              if (currentUser && (msg.targetId === 'ALL' || msg.targetId === currentUser.id)) {
-                showToast('🎁 Admin Gift In-Game!', msg.summary);
-              }
+              showToast('🎁 3D Data Aangepast!', msg.summary);
             } else if (msg.type === 'announcement') {
-              showBanner(msg.text);
-            } else if (msg.type === 'players_list') {
-              otherPlayers.clear();
-              (msg.players || []).forEach((p) => {
-                if (!currentUser || p.id !== currentUser.id) otherPlayers.set(p.id, p);
-              });
-              document.getElementById('hudOnline').textContent = Math.max(1, (msg.players || []).length);
-            } else if (msg.type === 'player_moved' && msg.player) {
-              if (!currentUser || msg.player.id !== currentUser.id) {
-                otherPlayers.set(msg.player.id, msg.player);
-              }
+              showToast('📢 Admin Bericht', msg.text);
             }
           };
         } catch (e) {}
       }
 
-      // Passive Pet Income & Zone Treadmill Tick (elke 1.5 sec)
-      setInterval(() => {
-        if (!currentUser) return;
-        // Collect pet income
-        fetch(API_BASE + '/api/game/action', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
-          body: JSON.stringify({ action: 'collect_income' })
-        }).then(r => r.json()).then(d => { if (d.ok && d.user) applyUser(d.user); }).catch(() => {});
-
-        // Check if standing on a treadmill in the world
-        const zN = ZONES.normalTreadmill;
-        const zA = ZONES.adminTreadmill;
-        if (player.x > zN.x && player.x < zN.x + zN.w && player.y > zN.y && player.y < zN.y + zN.h) {
-          doTreadmillTick(false, '10');
-        } else if (player.x > zA.x && player.x < zA.x + zA.w && player.y > zA.y && player.y < zA.y + zA.h) {
-          if (isAdmin(currentUser) || currentUser.hasAdminTreadmill) {
-            doTreadmillTick(true, document.getElementById('treadmillPower').value || '5000');
-          }
-        }
-      }, 1500);
-
-      // ============================================================
-      // CANVAS GAME LOOP
-      // ============================================================
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d');
-      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-      window.addEventListener('resize', resize);
-      resize();
-
-      window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
-      window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-      canvas.addEventListener('click', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
-        // Click on Egg Shop opens shop
-        const s = ZONES.eggShop;
-        if (cx > s.x && cx < s.x + s.w && cy > s.y && cy < s.y + s.h) {
-          openModal('shopModal');
-          return;
-        }
-        player.targetX = cx;
-        player.targetY = cy;
-      });
-
-      function spawnTrail(x, y, trailType) {
-        if (!trailType || trailType === 'none') return;
-        const isAdm = trailType === 'admin_trail';
-        trailParticles.push({
-          x: x + (Math.random() - 0.5) * 14,
-          y: y + (Math.random() - 0.5) * 14,
-          life: 1,
-          symbol: isAdm ? '👑' : '⚡',
-          vy: isAdm ? -0.8 : (Math.random() - 0.5) * 2
-        });
-      }
-
-      let lastWsSent = 0;
-      let tick = 0;
-
-      function gameLoop() {
-        tick++;
-        // Movement speed scales gently with in-game speed stat
-        const rawSpeed = currentUser ? Number(BigInt(parseBig(currentUser.speed)) > 10000n ? 10000n : BigInt(parseBig(currentUser.speed))) : 10;
-        const moveStep = Math.min(11, 3.2 + Math.log10(Math.max(10, rawSpeed)) * 1.8);
-
-        let moved = false;
-        let dx = 0, dy = 0;
-        if (keys['w'] || keys['arrowup']) dy -= 1;
-        if (keys['s'] || keys['arrowdown']) dy += 1;
-        if (keys['a'] || keys['arrowleft']) dx -= 1;
-        if (keys['d'] || keys['arrowright']) dx += 1;
-
-        if (dx || dy) {
-          player.targetX = null;
-          player.targetY = null;
-          const len = Math.hypot(dx, dy);
-          player.x += (dx / len) * moveStep;
-          player.y += (dy / len) * moveStep;
-          moved = true;
-        } else if (player.targetX !== null) {
-          const tdx = player.targetX - player.x;
-          const tdy = player.targetY - player.y;
-          const dist = Math.hypot(tdx, tdy);
-          if (dist > 6) {
-            player.x += (tdx / dist) * moveStep;
-            player.y += (tdy / dist) * moveStep;
-            moved = true;
-          } else {
-            player.targetX = null;
-          }
-        }
-
-        player.x = Math.max(40, Math.min(canvas.width - 40, player.x));
-        player.y = Math.max(80, Math.min(canvas.height - 40, player.y));
-
-        const myTrail = currentUser ? currentUser.activeTrail : 'none';
-        if (moved && tick % 2 === 0) {
-          spawnTrail(player.x, player.y + 12, myTrail);
-        }
-
-        if (moved && ws && ws.readyState === 1 && Date.now() - lastWsSent > 60) {
-          lastWsSent = Date.now();
-          ws.send(JSON.stringify({ type: 'move', x: player.x, y: player.y, activeTrail: myTrail }));
-        }
-
-        // DRAW WINTER WORLD
-        ctx.fillStyle = '#dbeafe';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Tile grid
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
-        ctx.lineWidth = 1;
-        for (let gx = 0; gx < canvas.width; gx += 48) {
-          ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, canvas.height); ctx.stroke();
-        }
-        for (let gy = 0; gy < canvas.height; gy += 48) {
-          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(canvas.width, gy); ctx.stroke();
-        }
-
-        // Draw Dierenhok
-        const pen = ZONES.pen;
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-        ctx.strokeStyle = '#6366f1';
-        ctx.lineWidth = 4;
-        ctx.fillRect(pen.x, pen.y, pen.w, pen.h);
-        ctx.strokeRect(pen.x, pen.y, pen.w, pen.h);
-        ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillText(pen.label, pen.x + 12, pen.y + 22);
-
-        // Draw player's pets inside Dierenhok
-        const pets = (currentUser && currentUser.pets) || [];
-        pets.slice(0, 12).forEach((pet, idx) => {
-          const px = pen.x + 30 + (idx % 4) * 48;
-          const py = pen.y + 60 + Math.floor(idx / 4) * 42 + Math.sin(tick * 0.08 + idx) * 4;
-          ctx.font = '24px sans-serif';
-          ctx.fillText(pet.emoji || '🥚', px, py);
-        });
-
-        // Draw Normal Treadmill
-        const tn = ZONES.normalTreadmill;
-        ctx.fillStyle = '#334155';
-        ctx.fillRect(tn.x, tn.y, tn.w, tn.h);
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(tn.x, tn.y, tn.w, tn.h);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(tn.label, tn.x + 28, tn.y + 45);
-
-        // Draw Admin Treadmill
-        const ta = ZONES.adminTreadmill;
-        const unlockedAdminTread = currentUser && (isAdmin(currentUser) || currentUser.hasAdminTreadmill);
-        ctx.fillStyle = unlockedAdminTread ? '#064e3b' : '#1e293b';
-        ctx.fillRect(ta.x, ta.y, ta.w, ta.h);
-        ctx.strokeStyle = unlockedAdminTread ? '#fbbf24' : '#64748b';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(ta.x, ta.y, ta.w, ta.h);
-        ctx.fillStyle = unlockedAdminTread ? '#fde68a' : '#94a3b8';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(unlockedAdminTread ? '👑 Admin Treadmill' : '🔒 Admin Treadmill', ta.x + 16, ta.y + 45);
-
-        // Draw Egg Shop
-        const es = ZONES.eggShop;
-        ctx.fillStyle = '#fef3c7';
-        ctx.fillRect(es.x, es.y, es.w, es.h);
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(es.x, es.y, es.w, es.h);
-        ctx.fillStyle = '#92400e';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.fillText(es.label, es.x + 32, es.y + 50);
-
-        // Draw Trail Particles
-        for (let i = trailParticles.length - 1; i >= 0; i--) {
-          const p = trailParticles[i];
-          p.y += p.vy;
-          p.life -= 0.025;
-          if (p.life <= 0) { trailParticles.splice(i, 1); continue; }
-          ctx.save();
-          ctx.globalAlpha = p.life;
-          ctx.font = '18px sans-serif';
-          ctx.fillText(p.symbol, p.x - 9, p.y);
-          ctx.restore();
-        }
-
-        // Helper to draw a player avatar + rank tag
-        function drawAvatar(x, y, name, role, isMe) {
-          ctx.beginPath();
-          ctx.arc(x, y, 18, 0, Math.PI * 2);
-          ctx.fillStyle = role === 'admin' ? '#f59e0b' : (isMe ? '#2563eb' : '#10b981');
-          ctx.fill();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#fff';
-          ctx.stroke();
-
-          ctx.font = '16px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(role === 'admin' ? '👑' : '🥚', x, y + 6);
-
-          const tag = role === 'admin' ? `[ADMIN] ${name}` : (role !== 'player' ? `[${role.toUpperCase()}] ${name}` : name);
-          ctx.font = 'bold 12px sans-serif';
-          const tw = ctx.measureText(tag).width + 12;
-          ctx.fillStyle = role === 'admin' ? '#f59e0b' : 'rgba(15, 23, 42, 0.85)';
-          ctx.fillRect(x - tw / 2, y - 38, tw, 18);
-          ctx.fillStyle = role === 'admin' ? '#0f172a' : '#fff';
-          ctx.fillText(tag, x, y - 25);
-          ctx.textAlign = 'start';
-        }
-
-        // Draw other online players
-        for (const op of otherPlayers.values()) {
-          drawAvatar(op.x, op.y, op.name || 'Speler', op.role || 'player', false);
-        }
-
-        // Draw local player
-        const myName = currentUser ? currentUser.name : 'Gast';
-        const myRole = currentUser ? (isAdmin(currentUser) ? 'admin' : currentUser.role) : 'player';
-        drawAvatar(player.x, player.y, myName, myRole, true);
-
-        // Snowflakes
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        for (const s of snowflakes) {
-          s.y += s.vy;
-          if (s.y > canvas.height) { s.y = -5; s.x = Math.random() * canvas.width; }
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        requestAnimationFrame(gameLoop);
-      }
-
-      // BOOT
       (async function init() {
+        load3DGame();
         initGoogle();
+        connectEvents();
         const token = getToken();
         if (token) {
           try {
             const res = await fetch(API_BASE + '/api/me', { headers: { Authorization: 'Bearer ' + token } });
             const data = await res.json();
-            if (res.ok && data.ok) {
-              applyUser(data.user);
-            } else {
-              openModal('accountModal');
-            }
+            if (res.ok && data.ok) renderUser(data.user);
           } catch (e) {}
-        } else {
-          openModal('accountModal');
         }
-        connectWS();
-        gameLoop();
       })();
     })();
   </script>

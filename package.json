@@ -1,6 +1,6 @@
 {
-  "name": "3x3-eggs-custom-game",
-  "version": "8.0.0",
+  "name": "3x3-eggs-3d-custom-server",
+  "version": "9.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
